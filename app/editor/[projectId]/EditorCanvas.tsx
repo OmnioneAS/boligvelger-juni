@@ -11,28 +11,26 @@ import type { UseActiveViewReturn } from './hooks/useActiveView';
 
 type ClosedPolygon = {
   points: PolygonPoints;
-  // In v1 these are draw-order polygons with no apartment assignment.
-  // Week 2 will tie each polygon to an apartment unit_id.
   unitId: string | null;
 };
 
 type Props = {
   apartments: Apartment[];
   activeViewHook: UseActiveViewReturn;
+  selectedUnitId: string | null;
+  onSelectUnit: (unitId: string | null) => void;
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-// Flatten [[x,y], ...] to [x, y, x, y, ...] for Konva's points prop
 function flattenPoints(pts: PolygonPoints): number[] {
   return pts.flatMap(([x, y]) => [x, y]);
 }
 
 const MIN_VERTICES_TO_CLOSE = 3;
-// Visual snap radius in image-space pixels (not screen pixels)
 const CLOSE_SNAP_RADIUS_IMG = 12;
 
-// ── Background image with CORS (required for canvas cross-origin sources) ────
+// ── Background image ─────────────────────────────────────────────────────────
 
 function BackgroundImage({
   src,
@@ -49,18 +47,21 @@ function BackgroundImage({
 
 // ── Main component ───────────────────────────────────────────────────────────
 
-export default function EditorCanvas({ apartments, activeViewHook }: Props) {
+export default function EditorCanvas({
+  apartments,
+  activeViewHook,
+  selectedUnitId,
+  onSelectUnit,
+}: Props) {
   const { activeView } = activeViewHook;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
-  // Polygon drawing state
   const [draftPoints, setDraftPoints] = useState<PolygonPoints>([]);
   const [closedPolygons, setClosedPolygons] = useState<ClosedPolygon[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // Measure container width via ResizeObserver
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -72,7 +73,7 @@ export default function EditorCanvas({ apartments, activeViewHook }: Props) {
     return () => ro.disconnect();
   }, []);
 
-  // Seed closed polygons from existing apartment data when view changes
+  // Re-seed polygons from DB when view or apartment data changes.
   useEffect(() => {
     if (!activeView) return;
     const existing: ClosedPolygon[] = [];
@@ -87,7 +88,6 @@ export default function EditorCanvas({ apartments, activeViewHook }: Props) {
     setIsDrawing(false);
   }, [activeView, apartments]);
 
-  // Close polygon on Enter key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter') closePolygon();
@@ -112,7 +112,7 @@ export default function EditorCanvas({ apartments, activeViewHook }: Props) {
   if (!activeView) {
     return (
       <div className="flex items-center justify-center h-96 bg-zinc-100 rounded-lg text-zinc-500 text-sm">
-        No view selected. Add a view image in Project Settings.
+        No view selected. Upload an image above to begin.
       </div>
     );
   }
@@ -121,33 +121,25 @@ export default function EditorCanvas({ apartments, activeViewHook }: Props) {
     return <div ref={containerRef} className="w-full h-96 bg-zinc-100 rounded-lg" />;
   }
 
-  // Scale so that 1 Konva unit = 1 image pixel.
-  // The stage renders at containerWidth; polygons are stored in image coords.
   const scale = containerWidth / activeView.image_width;
   const stageHeight = activeView.image_height * scale;
 
   const handleStageClick = (e: KonvaEventObject<MouseEvent>) => {
-    // Ignore right-clicks
     if (e.evt.button !== 0) return;
-
     const stage = e.target.getStage();
     if (!stage) return;
-
-    // getRelativePointerPosition accounts for stage scale → image coords
     const pos = stage.getRelativePointerPosition();
     if (!pos) return;
 
     const imgX = pos.x;
     const imgY = pos.y;
 
-    // Snap-close: if click is within CLOSE_SNAP_RADIUS_IMG of the first vertex
     if (
       isDrawing &&
       draftPoints.length >= MIN_VERTICES_TO_CLOSE
     ) {
       const [fx, fy] = draftPoints[0];
-      const dist = Math.hypot(imgX - fx, imgY - fy);
-      if (dist <= CLOSE_SNAP_RADIUS_IMG) {
+      if (Math.hypot(imgX - fx, imgY - fy) <= CLOSE_SNAP_RADIUS_IMG) {
         closePolygon();
         return;
       }
@@ -157,11 +149,8 @@ export default function EditorCanvas({ apartments, activeViewHook }: Props) {
     setIsDrawing(true);
   };
 
-  const handleStageDblClick = () => {
-    closePolygon();
-  };
+  const handleStageDblClick = () => closePolygon();
 
-  // First vertex indicator color
   const firstVertex = draftPoints[0];
 
   return (
@@ -175,10 +164,12 @@ export default function EditorCanvas({ apartments, activeViewHook }: Props) {
             <span>Double-click or Enter to close · Esc to cancel</span>
           </>
         ) : (
-          <span>Click on the image to start drawing a polygon</span>
+          <span>Click on the image to start drawing a polygon · click a polygon to select it</span>
         )}
         {closedPolygons.length > 0 && (
-          <span className="ml-auto">{closedPolygons.length} polygon{closedPolygons.length !== 1 ? 's' : ''}</span>
+          <span className="ml-auto">
+            {closedPolygons.length} polygon{closedPolygons.length !== 1 ? 's' : ''}
+          </span>
         )}
       </div>
 
@@ -207,21 +198,32 @@ export default function EditorCanvas({ apartments, activeViewHook }: Props) {
 
           {/* Layer 2: closed polygons */}
           <Layer>
-            {closedPolygons.map((poly, i) => (
-              <Line
-                key={i}
-                points={flattenPoints(poly.points)}
-                closed
-                fill="rgba(59, 130, 246, 0.25)"
-                stroke="#2563eb"
-                strokeWidth={2 / scale}
-                lineCap="round"
-                lineJoin="round"
-              />
-            ))}
+            {closedPolygons.map((poly, i) => {
+              const isSelected = poly.unitId !== null && poly.unitId === selectedUnitId;
+              return (
+                <Line
+                  key={i}
+                  points={flattenPoints(poly.points)}
+                  closed
+                  fill={isSelected ? 'rgba(59, 130, 246, 0.45)' : 'rgba(59, 130, 246, 0.2)'}
+                  stroke={isSelected ? '#1d4ed8' : '#2563eb'}
+                  strokeWidth={(isSelected ? 3 : 2) / scale}
+                  lineCap="round"
+                  lineJoin="round"
+                  // When not drawing: click selects this polygon.
+                  // When drawing: let the click bubble to Stage to add a vertex.
+                  onClick={(e) => {
+                    if (!isDrawing && poly.unitId !== null) {
+                      e.cancelBubble = true;
+                      onSelectUnit(poly.unitId);
+                    }
+                  }}
+                />
+              );
+            })}
           </Layer>
 
-          {/* Layer 3: draft polygon being drawn */}
+          {/* Layer 3: draft polygon */}
           <Layer>
             {draftPoints.length > 1 && (
               <Line
@@ -234,7 +236,6 @@ export default function EditorCanvas({ apartments, activeViewHook }: Props) {
               />
             )}
 
-            {/* Vertex dots */}
             {draftPoints.map(([x, y], i) => (
               <Circle
                 key={i}
@@ -247,7 +248,6 @@ export default function EditorCanvas({ apartments, activeViewHook }: Props) {
               />
             ))}
 
-            {/* "Snap here to close" ring around first vertex */}
             {isDrawing && draftPoints.length >= MIN_VERTICES_TO_CLOSE && firstVertex && (
               <Circle
                 x={firstVertex[0]}
@@ -260,7 +260,6 @@ export default function EditorCanvas({ apartments, activeViewHook }: Props) {
               />
             )}
 
-            {/* Vertex count label on first vertex */}
             {isDrawing && firstVertex && (
               <Text
                 x={firstVertex[0] + 8 / scale}
@@ -274,7 +273,7 @@ export default function EditorCanvas({ apartments, activeViewHook }: Props) {
         </Stage>
       </div>
 
-      {/* Polygon list (for debugging in v1) */}
+      {/* Polygon list (debug / audit view) */}
       {closedPolygons.length > 0 && (
         <div className="text-xs text-zinc-400 font-mono">
           {closedPolygons.map((p, i) => (

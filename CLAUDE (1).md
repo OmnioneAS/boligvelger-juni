@@ -96,9 +96,9 @@ Required in `.env.local` and in Vercel project settings:
 
 ## Current state
 
-**Session 1 complete (2026-06-26) — Week 1 foundation done.**
+### Session 1 complete (2026-06-26) — Week 1 foundation
 
-### What was built
+#### What was built
 
 - **Next.js 16 scaffold** (App Router, TypeScript strict, Tailwind, `@/*` alias)
 - **Supabase schema** — `supabase/migrations/0001_initial_schema.sql`: `projects` and `apartments` tables with all JSONB config columns, `updated_at` triggers, RLS (anon read, service-role write)
@@ -117,17 +117,43 @@ Required in `.env.local` and in Vercel project settings:
 - **`next.config.ts`** — `images.remotePatterns` for Supabase Storage, picsum.photos, Unsplash
 - **`.env.local.example`** — all five required env vars documented
 
-### What's next (remaining Week 1 + Week 2)
-
-1. **Fill in `.env.local`** with real Supabase credentials and run `npx supabase db push` to deploy migrations
-2. Confirm `/editor/00000000-0000-0000-0000-000000000001` loads and polygon drawing works
-3. **EditorSidebar** — apartment field form (all fields + viewing_date + images list), auto-save on blur
-4. **EditorImageUploader** — upload view image to Supabase Storage, capture dimensions, write back to `project.views`
-5. **ProjectSettings** — raw JSON editor for project-level config (v1)
-6. **Week 2**: vertex dragging, edge-click insert, delete vertex, point snapping, zoom/pan, undo, apartment image upload
-
-### Hard constraints enforced in session 1
+#### Hard constraints enforced in session 1
 
 All constraints from CLAUDE.md were upheld: no `any`, no hardcoded strings (labels always through `resolveLabel()`), image URLs always through `useActiveView()`, `SUPABASE_SERVICE_ROLE_KEY` server-only, no `localStorage`, container queries deferred to embed (Week 3).
+
+---
+
+### Session 2 complete (2026-06-26) — Week 1 fully done
+
+#### What was built
+
+- **`middleware.ts`** — enforces `EDITOR_SHARED_SECRET` on all `/editor/*` routes. First visit with `?key=<secret>` sets an `httpOnly` `editor_auth` cookie (8 h, SameSite: strict, secure in production) and redirects to the clean URL. Subsequent visits use the cookie. Wrong or missing key → 404.
+- **`lib/editor-strings.ts`** — `EDITOR_INTERNAL_STRINGS` constant; all editor-chrome strings that are not in `project.labels` live here (field labels for `title`, `unit_id`, `viewing_date`, `viewing_note`; save-indicator text: `Saving…`, `Saved ✓`, `Save failed`; section headers; empty states; uploader strings). Nothing scattered inline in components.
+- **`lib/auth.ts`** — updated: `EDITOR_AUTH_COOKIE` constant exported; `requireEditorAuth()` now accepts either the `x-editor-secret` header (server-to-server) or the `editor_auth` cookie (browser calls from `/editor/*` pages).
+- **`lib/actions.ts`** — `'use server'` Server Actions: `saveApartmentFields(id, patch)` and `saveProjectViews(id, views)`. Both use the service-role DB client directly; no auth header needed. `ApartmentPatch` type allows `null` for optional string columns so they can be explicitly cleared to NULL in Postgres.
+- **`supabase/migrations/0003_storage_bucket.sql`** — creates the `view-images` Storage bucket (public) with an anon read policy. Writes go through the service-role API route only.
+- **`app/api/storage/upload-view-image/route.ts`** — `POST` accepts `FormData { file, projectId, viewKey }`, uploads to `view-images/{projectId}/{viewKey}/image.{ext}` with `upsert: true`, returns `{ url: string }`. Protected by `requireEditorAuth` (cookie or header).
+- **`app/editor/[projectId]/EditorSidebar.tsx`** — apartment field form. All field labels from `resolveLabel(project.labels, 'field_*')` or `EDITOR_INTERNAL_STRINGS` (for `title`, `unit_id`, `viewing_date`, `viewing_note`). Status `<select>` data-driven from `project.statuses` with optimistic local state. Auto-save on blur via `saveApartmentFields`; "Saved ✓" flash (2 s) from `EDITOR_INTERNAL_STRINGS`. Fields absent from `project.visible_fields` show a "hidden in embed" badge. Polygon-status section shows per-view drawn/not-drawn + vertex count. Images section (read-only list in Week 1).
+- **`app/editor/[projectId]/EditorImageUploader.tsx`** — view image upload. Reads current view exclusively via `activeViewHook.activeView` (abstraction seam upheld). On file pick: measures dimensions via browser `Image` API → POSTs to `/api/storage/upload-view-image` → calls `saveProjectViews` Server Action → calls `onViewsUpdated` so shell re-renders canvas with new image and dimensions. Spinner during upload.
+- **`app/editor/[projectId]/EditorCanvas.tsx`** — polygon click-to-select added. When not drawing: clicking a closed polygon calls `onSelectUnit(unitId)` and stops propagation. Selected polygon rendered with stronger fill + thicker stroke. New props: `selectedUnitId`, `onSelectUnit`.
+- **`app/editor/[projectId]/EditorShell.tsx`** — major update. `views` and `apartments` lifted to React state (updated by sidebar saves and image uploads so canvas re-renders without a page reload). `selectedUnitId` state drives the sidebar. Layout changed to: toolbar row (view switcher + image uploader) above a two-pane main area (canvas `flex-1`, sidebar `w-80`).
+
+#### Hard constraints — session 2 audit
+
+- No `any` — verified by `npx tsc --noEmit` (zero errors)
+- No hardcoded customer strings — field labels via `resolveLabel()`; all admin strings via `EDITOR_INTERNAL_STRINGS`
+- Status colors from `status.color`, never hardcoded hex
+- Image URL access via `useActiveView()` only — `EditorImageUploader` reads `activeViewHook.activeView` exclusively
+- `SUPABASE_SERVICE_ROLE_KEY` server-only — used in `lib/actions.ts` (Server Action) and `/api/storage/…/route.ts` only
+- Analytics via `analytics.track()` — no analytics events in session 2 (none specified for editor features)
+- No `localStorage` — not touched
+
+---
+
+### What's next (Week 2)
+
+1. **First-time setup**: fill in `.env.local`, run `npx supabase db push` (applies all three migrations including storage bucket), then visit `/editor/00000000-0000-0000-0000-000000000001?key=<EDITOR_SHARED_SECRET>` to authenticate.
+2. **Week 2 editor completion**: vertex dragging, edge-click insert, delete vertex, point snapping (10 px snap), zoom/pan (Ctrl+scroll, Space+drag), undo (Ctrl+Z), apartment image upload (gallery items)
+3. **ProjectSettings** — raw JSON editor for project-level config (v1)
 
 <!-- Update this section after each work session so future Claude sessions know exactly where things stand. -->
