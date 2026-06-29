@@ -221,6 +221,32 @@ All constraints from CLAUDE.md were upheld: no `any`, no hardcoded strings (labe
 
 ---
 
+---
+
+### Session 5 complete (2026-06-29) — embed polish + add apartment UI
+
+#### What was built
+
+- **Card highlight on polygon hover** (`app/embed/[slug]/WidgetClient.tsx`, `CardList.tsx`, `Card.tsx`):
+  - Added `polygonHoveredUnitId` state separate from `hoveredUnitId`
+  - `handlePolygonHover` sets both; `handleCardHover` sets only `hoveredUnitId` (clears polygon source)
+  - `isPolygonHovered` prop flows to `Card` — adds `outline outline-2 outline-black` and `scrollIntoView({ behavior: 'smooth', block: 'nearest' })` via `useEffect`
+  - Result: hovering a polygon outlines the card AND scrolls it into view; hovering a card does not trigger outline/scroll
+
+- **Add apartment UI** (`lib/actions.ts`, `lib/editor-strings.ts`, `EditorShell.tsx`, `EditorSidebar.tsx`):
+  - `createApartment(projectId, unitId, title, status, displayOrder)` server action — inserts row with `polygons: {}`, `images: []`
+  - `+ Add apartment` button in sidebar list-view header toggles inline form
+  - Form fields: Unit ID (required, `type="text"`), Title (optional), Status (select from `project.statuses`)
+  - On success: `onApartmentCreated` callback adds apartment to EditorShell state and auto-selects it
+  - Disabled Add button shows grey (`disabled:bg-zinc-300`) not transparent so it's always visible
+  - Duplicate unit_id shows inline error "Failed — unit ID may already exist"
+
+#### Decisions
+- Unit ID is free text — no enforced naming convention. Must be unique per project.
+- `display_order` defaults to `apartments.length + 1` on creation.
+
+---
+
 ### What's next (Week 3 continued / Week 4)
 
 1. **Test the embed**: visit `http://localhost:3000/embed/test-project` after `npm run dev`
