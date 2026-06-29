@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import type { Apartment, Project } from '@/lib/types';
 import { resolveLabel } from '@/lib/config-defaults';
 import type { UseActiveViewReturn } from '@/lib/useActiveView';
@@ -9,6 +10,7 @@ type Props = {
   project: Project;
   activeViewHook: UseActiveViewReturn;
   isHovered: boolean;
+  isPolygonHovered: boolean;
   isSelected: boolean;
   onHover: (unitId: string | null) => void;
   onSelect: (unitId: string) => void;
@@ -32,11 +34,19 @@ export default function Card({
   project,
   activeViewHook,
   isHovered,
+  isPolygonHovered,
   isSelected,
   onHover,
   onSelect,
 }: Props) {
   const { activeView } = activeViewHook;
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isPolygonHovered) {
+      ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [isPolygonHovered]);
   const status = project.statuses.find((s) => s.key === apartment.status);
   const visibleFields = new Set(project.visible_fields);
   const hasPolygonInView = activeView
@@ -47,6 +57,7 @@ export default function Card({
 
   return (
     <div
+      ref={ref}
       data-unit-id={apartment.unit_id}
       onMouseEnter={() => onHover(apartment.unit_id)}
       onMouseLeave={() => onHover(null)}
@@ -55,6 +66,7 @@ export default function Card({
         'px-4 py-3 border-b border-zinc-100 cursor-pointer transition-colors',
         active ? 'bg-blue-50' : 'hover:bg-zinc-50',
         isSelected ? 'border-l-2 border-l-blue-500' : '',
+        isPolygonHovered ? 'outline outline-2 outline-black' : '',
       ].join(' ')}
     >
       {/* Header row: title + status dot */}

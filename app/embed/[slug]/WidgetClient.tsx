@@ -20,6 +20,7 @@ type Props = {
 export default function WidgetClient({ project, apartments }: Props) {
   const activeViewHook = useActiveView(project.views);
   const [hoveredUnitId, setHoveredUnitId] = useState<string | null>(null);
+  const [polygonHoveredUnitId, setPolygonHoveredUnitId] = useState<string | null>(null);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [activeRuleId, setActiveRuleId] = useState('all');
 
@@ -60,6 +61,16 @@ export default function WidgetClient({ project, apartments }: Props) {
     [activeViewHook],
   );
 
+  const handlePolygonHover = useCallback((unitId: string | null) => {
+    setHoveredUnitId(unitId);
+    setPolygonHoveredUnitId(unitId);
+  }, []);
+
+  const handleCardHover = useCallback((unitId: string | null) => {
+    setHoveredUnitId(unitId);
+    setPolygonHoveredUnitId(null);
+  }, []);
+
   const handleSelect = useCallback(
     (unitId: string) => {
       const apt = apartments.find((a) => a.unit_id === unitId);
@@ -97,7 +108,7 @@ export default function WidgetClient({ project, apartments }: Props) {
             activeViewHook={activeViewHook}
             hoveredUnitId={hoveredUnitId}
             selectedUnitId={selectedUnitId}
-            onHover={setHoveredUnitId}
+            onHover={handlePolygonHover}
             onSelect={handleSelect}
           />
         </div>
@@ -115,8 +126,9 @@ export default function WidgetClient({ project, apartments }: Props) {
             activeViewHook={activeViewHook}
             activeFilter={activeFilter}
             hoveredUnitId={hoveredUnitId}
+            polygonHoveredUnitId={polygonHoveredUnitId}
             selectedUnitId={selectedUnitId}
-            onHover={setHoveredUnitId}
+            onHover={handleCardHover}
             onSelect={handleSelect}
           />
         </div>

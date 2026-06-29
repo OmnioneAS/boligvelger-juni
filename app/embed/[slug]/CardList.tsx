@@ -12,6 +12,7 @@ type Props = {
   activeViewHook: UseActiveViewReturn;
   activeFilter: FilterRule;
   hoveredUnitId: string | null;
+  polygonHoveredUnitId: string | null;
   selectedUnitId: string | null;
   onHover: (unitId: string | null) => void;
   onSelect: (unitId: string) => void;
@@ -23,6 +24,7 @@ export default function CardList({
   activeViewHook,
   activeFilter,
   hoveredUnitId,
+  polygonHoveredUnitId,
   selectedUnitId,
   onHover,
   onSelect,
@@ -46,6 +48,7 @@ export default function CardList({
           project={project}
           activeViewHook={activeViewHook}
           isHovered={apt.unit_id === hoveredUnitId}
+          isPolygonHovered={apt.unit_id === polygonHoveredUnitId}
           isSelected={apt.unit_id === selectedUnitId}
           onHover={onHover}
           onSelect={onSelect}
