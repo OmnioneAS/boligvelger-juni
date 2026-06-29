@@ -150,10 +150,59 @@ All constraints from CLAUDE.md were upheld: no `any`, no hardcoded strings (labe
 
 ---
 
-### What's next (Week 2)
+---
 
-1. **First-time setup**: fill in `.env.local`, run `npx supabase db push` (applies all three migrations including storage bucket), then visit `/editor/00000000-0000-0000-0000-000000000001?key=<EDITOR_SHARED_SECRET>` to authenticate.
-2. **Week 2 editor completion**: vertex dragging, edge-click insert, delete vertex, point snapping (10 px snap), zoom/pan (Ctrl+scroll, Space+drag), undo (Ctrl+Z), apartment image upload (gallery items)
-3. **ProjectSettings** — raw JSON editor for project-level config (v1)
+### Session 3 complete (2026-06-29) — Week 2 editor completion
+
+#### What was built
+
+- **`app/editor/[projectId]/hooks/useHistory.ts`** — generic undo-only history hook. Uses a `useRef` for synchronous stack access + one `useState` boolean for reactive `canUndo`. Call `push(snapshot)` before each commit, `pop()` on Ctrl+Z, `clear()` on view switch.
+- **`app/editor/[projectId]/hooks/useSnap.ts`** — two pure utilities: `snapToNearby(x, y, allPointLists, excludePoint?)` snaps to the nearest existing vertex within 10 image-px; `distToSegment(px, py, ax, ay, bx, by)` returns perpendicular distance + parameter `t` used for edge-click vertex insertion.
+- **`app/editor/[projectId]/EditorCanvas.tsx`** — complete rewrite. New features:
+  - **Polygon save pipeline**: new `onPolygonSaved(unitId, points | null)` prop; every commit (draw, drag, insert, delete, undo) calls it so EditorShell persists to DB
+  - **Drawing gated on selected apartment**: must select an apartment before the canvas accepts clicks to draw; empty-space click starts drawing; Escape cancels
+  - **Vertex drag**: closed-polygon vertex circles are `draggable`; snap to nearest vertex on drag-end; commits + saves
+  - **Edge-click to insert vertex**: clicking an already-selected polygon's edge (within 8 image-px) inserts a vertex at the click point; commits + saves
+  - **Delete vertex**: `Delete`/`Backspace` removes the selected vertex; minimum 3 vertices enforced
+  - **Point snapping**: all vertex placements (during drawing, drag-end, edge-insert) snap to nearest existing vertex within 10 image-px
+  - **Zoom**: `Ctrl+scroll` (or `Cmd+scroll` on Mac); centers on cursor; range 0.3×–10×
+  - **Pan**: `Space+drag`; grab/grabbing cursor feedback; stable across zoom
+  - **Undo** (`Ctrl+Z` / `Cmd+Z`): pops history stack, restores previous polygon state, fires `onPolygonSaved` to persist the reverted state; clears on view switch
+  - **Keyboard**: `Enter` closes draft polygon; `Esc` cancels draft → deselects polygon → deselects apartment (cascade); all keyboard handlers skip form inputs
+  - **Status bar**: context-aware hints (drawing / apartment selected / no selection); shows "Ctrl+Z undo" when stack is non-empty
+  - **Stable refs pattern**: all state used inside keyboard `useEffect` is mirrored to refs to avoid stale closures; re-seed effect depends only on `activeView` (apartments excluded intentionally — canvas is source of truth during editing)
+- **`app/editor/[projectId]/EditorShell.tsx`** — `handlePolygonSaved` added: finds apartment by `unitId`, merges or deletes the view's polygon key, calls `saveApartmentFields`, updates `apartments` state on success. Passed as `onPolygonSaved` prop to EditorCanvas.
+- **`supabase/migrations/0004_apartment_images_bucket.sql`** — creates `apartment-images` Storage bucket (public) with anon read policy.
+- **`app/api/storage/upload-apartment-image/route.ts`** — `POST` accepts `FormData { file, apartmentId, filename }`, uploads to `apartment-images/{apartmentId}/{filename}`, returns `{ url }`. Protected by `requireEditorAuth`.
+- **`lib/editor-strings.ts`** — added `apt_image_add`, `apt_image_delete`, `apt_image_uploading`, `apt_image_upload_error`, `apt_image_type_label`, `apt_image_alt_label`, `apt_image_alt_placeholder`.
+- **`app/editor/[projectId]/EditorSidebar.tsx`** — replaced read-only images list with `ApartmentImages` sub-component: file input uploads to `/api/storage/upload-apartment-image`, adds image to `apartment.images[]`, saves via `saveApartmentFields`; shows thumbnail, type select (`render`/`floorplan`/`photo`), alt text input (auto-saves on change), delete button. Images sync when selected apartment changes.
+
+#### Hard constraints — session 3 audit
+
+- No `any` — `npx tsc --noEmit` passes with zero errors
+- No hardcoded strings — all new UI strings in `EDITOR_INTERNAL_STRINGS`
+- `SUPABASE_SERVICE_ROLE_KEY` server-only — only in `lib/actions.ts` and API routes
+- No redo — intentionally omitted per spec
+- Abstraction seams upheld — image URLs via `useActiveView()`, no direct `gtag`/`fbq`, no `localStorage`
+
+---
+
+### What's next (Week 3)
+
+1. **Run migration**: `npx supabase db push` to create the `apartment-images` bucket (migration `0004`)
+2. **Public embed** (`/embed/[slug]`):
+   - `app/embed/[slug]/page.tsx` with `revalidate = 60`
+   - `WidgetClient.tsx` — top-level client component
+   - `ImageCanvas.tsx` — view image + SVG polygon overlay using `useActiveView()`
+   - `PolygonOverlay.tsx` — data-driven SVG (status color/stroke from `project.statuses`)
+   - `ViewSwitcher.tsx` — public pill toggle
+   - `CardList.tsx` + `Card.tsx` — reads `visible_fields` + `labels`
+   - `FilterBar.tsx` — from `statuses` with rule-based architecture
+   - `DetailModal.tsx` + `ImageGallery.tsx` — apartment images, CTA, viewing section
+   - `ViewingBadge.tsx`, `PromoPopup.tsx`
+3. **Bidirectional hover** — polygon ↔ card cross-highlight via `unitId`
+4. **Container-query responsive layout** — desktop 60/40 split, mobile stacked
+5. **`embed.js`** — customer-facing script: creates iframe, postMessage height
+6. **Analytics** — `lib/analytics.ts` wired through `WidgetClient`
 
 <!-- Update this section after each work session so future Claude sessions know exactly where things stand. -->

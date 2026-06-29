@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import type { Project, Apartment, VisibleField } from '@/lib/types';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import type { Project, Apartment, ApartmentImage, VisibleField } from '@/lib/types';
 import { resolveLabel } from '@/lib/config-defaults';
 import { EDITOR_INTERNAL_STRINGS } from '@/lib/editor-strings';
 import { saveApartmentFields } from '@/lib/actions';
@@ -40,8 +40,10 @@ type FieldConfig = {
 
 type Props = {
   project: Project;
+  apartments: Apartment[];
   apartment: Apartment | null;
   onSaved: (updated: Apartment) => void;
+  onSelectUnit: (unitId: string) => void;
 };
 
 // ── Field configuration (drives the form rows) ────────────────────────────────
@@ -94,9 +96,186 @@ function getOriginalValue(apt: Apartment, key: StringField): string {
   return typeof raw === 'string' ? raw : '';
 }
 
+// ── ApartmentImages sub-component ────────────────────────────────────────────
+
+function ApartmentImages({
+  apartment,
+  onSaved,
+}: {
+  apartment: Apartment;
+  onSaved: (updated: Apartment) => void;
+}) {
+  const [images, setImages] = useState<ApartmentImage[]>(apartment.images);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'error'>('idle');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync when a different apartment is selected
+  useEffect(() => {
+    setImages(apartment.images);
+  }, [apartment.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      // Reset input so the same file can be re-picked after deletion
+      e.target.value = '';
+
+      setUploadStatus('uploading');
+
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('apartmentId', apartment.id);
+      fd.append('filename', `${Date.now()}_${file.name}`);
+
+      try {
+        const res = await fetch('/api/storage/upload-apartment-image', {
+          method: 'POST',
+          body: fd,
+        });
+        if (!res.ok) throw new Error('Upload failed');
+        const { url } = (await res.json()) as { url: string };
+
+        const newImage: ApartmentImage = {
+          url,
+          alt: '',
+          type: 'render',
+          order: images.length + 1,
+        };
+        const newImages = [...images, newImage];
+        setImages(newImages);
+
+        const result = await saveApartmentFields(apartment.id, { images: newImages });
+        if (result.ok) {
+          onSaved(result.apartment);
+          setUploadStatus('idle');
+        } else {
+          throw new Error(result.error);
+        }
+      } catch {
+        setUploadStatus('error');
+        setTimeout(() => setUploadStatus('idle'), 3000);
+      }
+    },
+    [apartment.id, images, onSaved],
+  );
+
+  const handleDelete = useCallback(
+    async (idx: number) => {
+      const newImages = images.filter((_, i) => i !== idx).map((img, i) => ({
+        ...img,
+        order: i + 1,
+      }));
+      setImages(newImages);
+      const result = await saveApartmentFields(apartment.id, { images: newImages });
+      if (result.ok) onSaved(result.apartment);
+    },
+    [apartment.id, images, onSaved],
+  );
+
+  const handleAltChange = useCallback(
+    async (idx: number, alt: string) => {
+      const newImages = images.map((img, i) => (i === idx ? { ...img, alt } : img));
+      setImages(newImages);
+      const result = await saveApartmentFields(apartment.id, { images: newImages });
+      if (result.ok) onSaved(result.apartment);
+    },
+    [apartment.id, images, onSaved],
+  );
+
+  const handleTypeChange = useCallback(
+    async (idx: number, type: ApartmentImage['type']) => {
+      const newImages = images.map((img, i) => (i === idx ? { ...img, type } : img));
+      setImages(newImages);
+      const result = await saveApartmentFields(apartment.id, { images: newImages });
+      if (result.ok) onSaved(result.apartment);
+    },
+    [apartment.id, images, onSaved],
+  );
+
+  return (
+    <div className="px-4 py-3 flex flex-col gap-2">
+      <div className="flex items-center justify-between mb-0.5">
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+          {EDITOR_INTERNAL_STRINGS.section_images}{' '}
+          <span className="font-normal normal-case tracking-normal">({images.length})</span>
+        </p>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadStatus === 'uploading'}
+          className="text-xs text-blue-600 hover:text-blue-700 disabled:opacity-50"
+        >
+          {uploadStatus === 'uploading'
+            ? EDITOR_INTERNAL_STRINGS.apt_image_uploading
+            : uploadStatus === 'error'
+              ? EDITOR_INTERNAL_STRINGS.apt_image_upload_error
+              : EDITOR_INTERNAL_STRINGS.apt_image_add}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+      </div>
+
+      {images.length === 0 && (
+        <p className="text-xs text-zinc-400">{EDITOR_INTERNAL_STRINGS.no_images}</p>
+      )}
+
+      {images
+        .sort((a, b) => a.order - b.order)
+        .map((img, i) => (
+          <div
+            key={i}
+            className="flex flex-col gap-1 border border-zinc-100 rounded p-2 bg-zinc-50"
+          >
+            {/* Thumbnail */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={img.url}
+              alt={img.alt}
+              className="w-full h-20 object-cover rounded border border-zinc-200"
+            />
+            <div className="flex items-center gap-1.5">
+              <label className="text-[10px] text-zinc-400 shrink-0">
+                {EDITOR_INTERNAL_STRINGS.apt_image_type_label}
+              </label>
+              <select
+                value={img.type}
+                onChange={(e) =>
+                  handleTypeChange(i, e.target.value as ApartmentImage['type'])
+                }
+                className="flex-1 text-xs border border-zinc-200 rounded px-1 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500/40"
+              >
+                <option value="render">render</option>
+                <option value="floorplan">floorplan</option>
+                <option value="photo">photo</option>
+              </select>
+              <button
+                onClick={() => handleDelete(i)}
+                className="text-[10px] text-red-400 hover:text-red-600 shrink-0"
+              >
+                {EDITOR_INTERNAL_STRINGS.apt_image_delete}
+              </button>
+            </div>
+            <input
+              type="text"
+              value={img.alt}
+              placeholder={EDITOR_INTERNAL_STRINGS.apt_image_alt_placeholder}
+              onChange={(e) => handleAltChange(i, e.target.value)}
+              className="w-full text-xs border border-zinc-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500/40"
+            />
+          </div>
+        ))}
+    </div>
+  );
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
-export default function EditorSidebar({ project, apartment, onSaved }: Props) {
+export default function EditorSidebar({ project, apartments, apartment, onSaved, onSelectUnit }: Props) {
   const [formValues, setFormValues] = useState<FormValues>(
     apartment ? initFormValues(apartment) : initFormValues({} as Apartment),
   );
@@ -164,12 +343,54 @@ export default function EditorSidebar({ project, apartment, onSaved }: Props) {
     [apartment, onSaved, setSaveStatusWithTimeout],
   );
 
-  // ── Empty state ───────────────────────────────────────────────────────────
+  // ── Empty state: show apartment list so user can select one to start ────────
 
   if (!apartment) {
     return (
-      <aside className="w-80 shrink-0 flex items-start justify-center pt-16 text-center">
-        <p className="text-sm text-zinc-400 px-4">{EDITOR_INTERNAL_STRINGS.no_apartment_selected}</p>
+      <aside className="w-80 shrink-0 flex flex-col gap-0 overflow-y-auto bg-white border border-zinc-200 rounded-lg">
+        <div className="px-4 py-3 border-b border-zinc-100">
+          <p className="text-xs font-semibold text-zinc-500">Select an apartment to edit</p>
+          <p className="text-xs text-zinc-400 mt-0.5">Click a row to select, then draw its polygon on the canvas.</p>
+        </div>
+        <div className="flex flex-col divide-y divide-zinc-50">
+          {apartments
+            .sort((a, b) => a.display_order - b.display_order)
+            .map((apt) => {
+              const status = project.statuses.find((s) => s.key === apt.status);
+              const polyCount = Object.keys(apt.polygons).length;
+              return (
+                <button
+                  key={apt.id}
+                  onClick={() => onSelectUnit(apt.unit_id)}
+                  className="w-full text-left px-4 py-2.5 hover:bg-zinc-50 transition-colors flex items-center gap-3"
+                >
+                  {status && (
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/10"
+                      style={{ backgroundColor: status.color }}
+                    />
+                  )}
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-medium text-zinc-800 truncate">
+                      {apt.title || apt.unit_id}
+                    </span>
+                    <span className="block text-xs text-zinc-400 font-mono">{apt.unit_id}</span>
+                  </span>
+                  <span className={`text-xs shrink-0 ${polyCount > 0 ? 'text-emerald-500' : 'text-zinc-300'}`}>
+                    {polyCount > 0 ? `${polyCount} polygon${polyCount !== 1 ? 's' : ''}` : 'no polygon'}
+                  </span>
+                </button>
+              );
+            })}
+        </div>
+        {apartments.length === 0 && (
+          <p className="px-4 py-6 text-sm text-zinc-400 text-center">
+            No apartments found. Run the seed migration to add test data.
+          </p>
+        )}
+        <div className="px-4 py-2 border-t border-zinc-100">
+          <p className="text-[11px] text-zinc-300">{EDITOR_INTERNAL_STRINGS.no_apartment_selected}</p>
+        </div>
       </aside>
     );
   }
@@ -324,30 +545,8 @@ export default function EditorSidebar({ project, apartment, onSaved }: Props) {
           })}
       </div>
 
-      {/* ── Images list (read-only in Week 1; upload comes in Week 2) ── */}
-      <div className="px-4 py-3 flex flex-col gap-1.5">
-        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-0.5">
-          {EDITOR_INTERNAL_STRINGS.section_images}{' '}
-          <span className="font-normal normal-case tracking-normal">
-            ({apartment.images.length})
-          </span>
-        </p>
-        {apartment.images.length === 0 ? (
-          <p className="text-xs text-zinc-400">{EDITOR_INTERNAL_STRINGS.no_images}</p>
-        ) : (
-          apartment.images
-            .sort((a, b) => a.order - b.order)
-            .map((img, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs">
-                <span className="bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded font-mono shrink-0">
-                  {img.type}
-                </span>
-                <span className="text-zinc-600 truncate">{img.alt || img.url}</span>
-                <span className="text-zinc-300 shrink-0">#{img.order}</span>
-              </div>
-            ))
-        )}
-      </div>
+      {/* ── Apartment images ── */}
+      <ApartmentImages apartment={apartment} onSaved={onSaved} />
     </aside>
   );
 }

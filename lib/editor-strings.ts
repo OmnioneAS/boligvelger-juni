@@ -36,11 +36,20 @@ export const EDITOR_INTERNAL_STRINGS = {
   // ── Embed visibility badge ────────────────────────────────────────────────
   hidden_in_embed: 'hidden in embed',
 
-  // ── Image uploader ────────────────────────────────────────────────────────
+  // ── View image uploader ───────────────────────────────────────────────────
   upload_image: 'Upload image',
   replace_image: 'Replace image',
   uploading: 'Uploading…',
   upload_error: 'Upload failed',
+
+  // ── Apartment image uploader ──────────────────────────────────────────────
+  apt_image_add: 'Add image',
+  apt_image_delete: 'Delete',
+  apt_image_uploading: 'Uploading…',
+  apt_image_upload_error: 'Upload failed',
+  apt_image_type_label: 'Type',
+  apt_image_alt_label: 'Alt text',
+  apt_image_alt_placeholder: 'e.g. Living room facing south',
 } as const;
 
 export type EditorInternalStringKey = keyof typeof EDITOR_INTERNAL_STRINGS;

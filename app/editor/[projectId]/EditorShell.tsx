@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import type { Project, Apartment, ViewDefinition } from '@/lib/types';
+import type { Project, Apartment, ViewDefinition, PolygonPoints } from '@/lib/types';
 import { useActiveView } from './hooks/useActiveView';
 import EditorViewSwitcher from './EditorViewSwitcher';
 import EditorCanvas from './EditorCanvas';
 import EditorSidebar from './EditorSidebar';
 import EditorImageUploader from './EditorImageUploader';
+import { saveApartmentFields } from '@/lib/actions';
 
 type Props = {
   project: Project;
@@ -30,6 +31,29 @@ export default function EditorShell({ project, apartments: initialApartments }: 
   const handleViewsUpdated = useCallback((newViews: ViewDefinition[]) => {
     setViews(newViews);
   }, []);
+
+  // Canvas: polygon drawn, edited, or undone. points=null means remove for this view.
+  const handlePolygonSaved = useCallback(
+    (unitId: string, points: PolygonPoints | null) => {
+      const viewKey = activeViewHook.activeViewKey;
+      if (!viewKey) return;
+      const apt = apartments.find(a => a.unit_id === unitId);
+      if (!apt) return;
+
+      let newPolygons: Apartment['polygons'];
+      if (points === null) {
+        newPolygons = { ...apt.polygons };
+        delete newPolygons[viewKey];
+      } else {
+        newPolygons = { ...apt.polygons, [viewKey]: points };
+      }
+
+      saveApartmentFields(apt.id, { polygons: newPolygons }).then(result => {
+        if (result.ok) handleSaved(result.apartment);
+      });
+    },
+    [apartments, activeViewHook.activeViewKey, handleSaved],
+  );
 
   const selectedApartment = apartments.find(a => a.unit_id === selectedUnitId) ?? null;
 
@@ -68,14 +92,17 @@ export default function EditorShell({ project, apartments: initialApartments }: 
             activeViewHook={activeViewHook}
             selectedUnitId={selectedUnitId}
             onSelectUnit={setSelectedUnitId}
+            onPolygonSaved={handlePolygonSaved}
           />
         </div>
 
         {/* Sidebar — fixed width, scrollable independently */}
         <EditorSidebar
           project={project}
+          apartments={apartments}
           apartment={selectedApartment}
           onSaved={handleSaved}
+          onSelectUnit={setSelectedUnitId}
         />
       </div>
     </div>
