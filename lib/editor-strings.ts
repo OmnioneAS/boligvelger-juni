@@ -42,6 +42,15 @@ export const EDITOR_INTERNAL_STRINGS = {
   uploading: 'Uploading…',
   upload_error: 'Upload failed',
 
+  // ── Add apartment form ────────────────────────────────────────────────────
+  add_apartment_btn: '+ Add apartment',
+  add_apartment_unit_id_placeholder: 'e.g. H0101',
+  add_apartment_title_placeholder: 'e.g. Apartment 1',
+  add_apartment_submit: 'Add',
+  add_apartment_cancel: 'Cancel',
+  add_apartment_saving: 'Adding…',
+  add_apartment_error: 'Failed — unit ID may already exist',
+
   // ── Apartment image uploader ──────────────────────────────────────────────
   apt_image_add: 'Add image',
   apt_image_delete: 'Delete',

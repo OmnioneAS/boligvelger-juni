@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Project, Apartment, ApartmentImage, VisibleField } from '@/lib/types';
 import { resolveLabel } from '@/lib/config-defaults';
 import { EDITOR_INTERNAL_STRINGS } from '@/lib/editor-strings';
-import { saveApartmentFields } from '@/lib/actions';
+import { saveApartmentFields, createApartment } from '@/lib/actions';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,6 +44,7 @@ type Props = {
   apartment: Apartment | null;
   onSaved: (updated: Apartment) => void;
   onSelectUnit: (unitId: string) => void;
+  onApartmentCreated: (apt: Apartment) => void;
 };
 
 // ── Field configuration (drives the form rows) ────────────────────────────────
@@ -275,7 +276,40 @@ function ApartmentImages({
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export default function EditorSidebar({ project, apartments, apartment, onSaved, onSelectUnit }: Props) {
+export default function EditorSidebar({ project, apartments, apartment, onSaved, onSelectUnit, onApartmentCreated }: Props) {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addUnitId, setAddUnitId] = useState('');
+  const [addTitle, setAddTitle] = useState('');
+  const [addStatus, setAddStatus] = useState(project.statuses[0]?.key ?? '');
+  const [addSaving, setAddSaving] = useState(false);
+  const [addError, setAddError] = useState('');
+
+  const handleAddSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!addUnitId.trim()) return;
+      setAddSaving(true);
+      setAddError('');
+      const result = await createApartment(
+        project.id,
+        addUnitId.trim(),
+        addTitle.trim(),
+        addStatus,
+        apartments.length + 1,
+      );
+      setAddSaving(false);
+      if (result.ok) {
+        onApartmentCreated(result.apartment);
+        setShowAddForm(false);
+        setAddUnitId('');
+        setAddTitle('');
+      } else {
+        setAddError(EDITOR_INTERNAL_STRINGS.add_apartment_error);
+      }
+    },
+    [addUnitId, addTitle, addStatus, apartments.length, project.id, onApartmentCreated],
+  );
+
   const [formValues, setFormValues] = useState<FormValues>(
     apartment ? initFormValues(apartment) : initFormValues({} as Apartment),
   );
@@ -348,10 +382,71 @@ export default function EditorSidebar({ project, apartments, apartment, onSaved,
   if (!apartment) {
     return (
       <aside className="w-80 shrink-0 flex flex-col gap-0 overflow-y-auto bg-white border border-zinc-200 rounded-lg">
-        <div className="px-4 py-3 border-b border-zinc-100">
-          <p className="text-xs font-semibold text-zinc-500">Select an apartment to edit</p>
-          <p className="text-xs text-zinc-400 mt-0.5">Click a row to select, then draw its polygon on the canvas.</p>
+        <div className="px-4 py-3 border-b border-zinc-100 flex items-center justify-between gap-2">
+          <div>
+            <p className="text-xs font-semibold text-zinc-500">Select an apartment to edit</p>
+            <p className="text-xs text-zinc-400 mt-0.5">Click a row to select, then draw its polygon on the canvas.</p>
+          </div>
+          <button
+            onClick={() => { setShowAddForm(v => !v); setAddError(''); }}
+            className="shrink-0 text-xs text-blue-600 hover:text-blue-700 font-medium"
+          >
+            {EDITOR_INTERNAL_STRINGS.add_apartment_btn}
+          </button>
         </div>
+
+        {/* Inline add form */}
+        {showAddForm && (
+          <form
+            onSubmit={handleAddSubmit}
+            className="px-4 py-3 border-b border-zinc-100 flex flex-col gap-2 bg-zinc-50"
+          >
+            <input
+              type="text"
+              required
+              placeholder={EDITOR_INTERNAL_STRINGS.add_apartment_unit_id_placeholder}
+              value={addUnitId}
+              onChange={e => setAddUnitId(e.target.value)}
+              className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/40 bg-white"
+            />
+            <input
+              type="text"
+              placeholder={EDITOR_INTERNAL_STRINGS.add_apartment_title_placeholder}
+              value={addTitle}
+              onChange={e => setAddTitle(e.target.value)}
+              className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/40 bg-white"
+            />
+            <select
+              value={addStatus}
+              onChange={e => setAddStatus(e.target.value)}
+              className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/40 bg-white"
+            >
+              {project.statuses.sort((a, b) => a.order - b.order).map(s => (
+                <option key={s.key} value={s.key}>
+                  {resolveLabel(project.labels, s.label_key)}
+                </option>
+              ))}
+            </select>
+            {addError && <p className="text-xs text-red-500">{addError}</p>}
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={addSaving || !addUnitId.trim()}
+                className="flex-1 text-sm bg-zinc-900 text-white rounded px-3 py-1.5 hover:bg-zinc-700 disabled:bg-zinc-300 disabled:cursor-not-allowed transition-colors"
+              >
+                {addSaving ? EDITOR_INTERNAL_STRINGS.add_apartment_saving : EDITOR_INTERNAL_STRINGS.add_apartment_submit}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowAddForm(false); setAddError(''); }}
+                className="text-sm text-zinc-500 hover:text-zinc-700 px-3 py-1.5"
+              >
+                {EDITOR_INTERNAL_STRINGS.add_apartment_cancel}
+              </button>
+            </div>
+          </form>
+        )}
+
         <div className="flex flex-col divide-y divide-zinc-50">
           {apartments
             .sort((a, b) => a.display_order - b.display_order)
@@ -385,7 +480,7 @@ export default function EditorSidebar({ project, apartments, apartment, onSaved,
         </div>
         {apartments.length === 0 && (
           <p className="px-4 py-6 text-sm text-zinc-400 text-center">
-            No apartments found. Run the seed migration to add test data.
+            No apartments yet. Use "+ Add apartment" above to get started.
           </p>
         )}
         <div className="px-4 py-2 border-t border-zinc-100">

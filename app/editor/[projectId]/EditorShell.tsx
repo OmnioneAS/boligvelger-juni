@@ -27,6 +27,12 @@ export default function EditorShell({ project, apartments: initialApartments }: 
     setApartments(prev => prev.map(a => (a.id === updated.id ? updated : a)));
   }, []);
 
+  // Sidebar: new apartment created — add to list and auto-select it.
+  const handleApartmentCreated = useCallback((apt: Apartment) => {
+    setApartments(prev => [...prev, apt]);
+    setSelectedUnitId(apt.unit_id);
+  }, []);
+
   // Image uploader: replace views array with patched version.
   const handleViewsUpdated = useCallback((newViews: ViewDefinition[]) => {
     setViews(newViews);
@@ -103,6 +109,7 @@ export default function EditorShell({ project, apartments: initialApartments }: 
           apartment={selectedApartment}
           onSaved={handleSaved}
           onSelectUnit={setSelectedUnitId}
+          onApartmentCreated={handleApartmentCreated}
         />
       </div>
     </div>

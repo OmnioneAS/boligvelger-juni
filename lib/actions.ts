@@ -29,6 +29,33 @@ export async function saveApartmentFields(
   return { ok: true, apartment: data as Apartment };
 }
 
+export async function createApartment(
+  projectId: string,
+  unitId: string,
+  title: string,
+  status: string,
+  displayOrder: number,
+): Promise<{ ok: true; apartment: Apartment } | { ok: false; error: string }> {
+  const { data, error } = await db
+    .from('apartments')
+    .insert({
+      project_id: projectId,
+      unit_id: unitId,
+      title: title || null,
+      status,
+      display_order: displayOrder,
+      polygons: {},
+      images: [],
+    })
+    .select()
+    .single();
+
+  if (error || !data) {
+    return { ok: false, error: error?.message ?? 'Unknown error' };
+  }
+  return { ok: true, apartment: data as Apartment };
+}
+
 export async function saveProjectViews(
   id: string,
   views: ViewDefinition[],
