@@ -24,3 +24,43 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ── Boligvelger embed layout ─────────────────────────────────────────────── */
+/* Container queries drive layout — NOT viewport media queries.
+   The embed lives in an iframe of unknown width. */
+
+.bv-root {
+  container-type: inline-size;
+  container-name: bv-root;
+  font-family: system-ui, sans-serif;
+}
+
+.bv-layout {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Desktop: side-by-side 60/40 */
+@container bv-root (min-width: 768px) {
+  .bv-layout {
+    flex-direction: row;
+    align-items: stretch;
+    height: 100%;
+  }
+  .bv-col-canvas {
+    flex: 60 60 0%;
+    min-width: 0;
+  }
+  .bv-col-cards {
+    flex: 40 40 0%;
+    min-width: 0;
+    overflow-y: auto;
+    max-height: 100%;
+  }
+}
+
+/* Mobile: stacked */
+@container bv-root (max-width: 767px) {
+  .bv-col-canvas { width: 100%; }
+  .bv-col-cards  { width: 100%; }
+}

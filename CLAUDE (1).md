@@ -187,6 +187,52 @@ All constraints from CLAUDE.md were upheld: no `any`, no hardcoded strings (labe
 
 ---
 
+---
+
+### Session 4 complete (2026-06-29) — Week 3 public embed
+
+#### What was built
+
+- **`lib/useActiveView.ts`** — moved here from `app/editor/[projectId]/hooks/useActiveView.ts`; editor's hook file now re-exports from lib so all existing imports continue to work. This is the shared abstraction seam for both the editor and embed.
+- **`app/globals.css`** — added `.bv-root` (container-type: inline-size), `.bv-layout`, `.bv-col-canvas`, `.bv-col-cards` with `@container` rules: desktop ≥768px → 60/40 side-by-side, mobile stacked. No viewport media queries.
+- **`app/embed/[slug]/page.tsx`** — server component, `revalidate = 60`. Fetches project + apartments via service-role client, passes to WidgetClient. `notFound()` on missing slug.
+- **`app/embed/[slug]/PolygonOverlay.tsx`** — single dispatch point for all SVG polygon output. Takes `{ unitId, points, status }` via apartment + project; applies fill/stroke/clickability from `project.statuses`. Hover: brightness filter + thicker stroke. Non-clickable: `pointer-events: none`.
+- **`app/embed/[slug]/ImageCanvas.tsx`** — wraps view image in a `position: relative` div, overlays SVG with `viewBox="0 0 {image_width} {image_height}" preserveAspectRatio="xMidYMid meet"`. All image URL access via `activeViewHook.activeView`.
+- **`app/embed/[slug]/ViewSwitcher.tsx`** — pill-style toggle; hidden when only one view. Labels via `resolveLabel`. Thumbnails from `view.thumbnail_url`.
+- **`app/embed/[slug]/FilterBar.tsx`** — exports `FilterRule` type and `buildStatusRules()` factory. Rule-based: `predicate: (apt) => boolean`. Chips from `project.statuses` where `show_in_filter: true`. "All" chip always first.
+- **`app/embed/[slug]/Card.tsx`** — renders one apartment card with visible fields from `project.visible_fields`, labels from `project.labels`. Shows "switch view" hint if apartment has no polygon in current view. Hover/select state via className.
+- **`app/embed/[slug]/CardList.tsx`** — applies active filter predicate, renders `<Card>` list. Shows `no_apartments_match` label when empty.
+- **`app/embed/[slug]/ImageGallery.tsx`** — main image + thumbnail row. Left/right arrow keyboard navigation. Handles `caption` overlay.
+- **`app/embed/[slug]/DetailModal.tsx`** — fixed overlay with backdrop-click-to-close and Escape key. Shows ImageGallery (if `gallery_config.show_in_modal`), field grid, description, upcoming viewing section (if `viewing_date` in future), CTA button. CTA supports `link`, `email`, `phone` types. Fires `apartment_view` and `cta_click` analytics events.
+- **`app/embed/[slug]/PromoPopup.tsx`** — appears after `popup_config.delay_ms`. Checks `sessionStorage` key `bv:popup_seen:{slug}` to show once per session. Viewing-aware: uses `when_viewing_scheduled` if any apartment has future `viewing_date`, else `when_no_viewing`. Fires `popup_shown`, `popup_dismissed`, `popup_cta_click` events.
+- **`app/embed/[slug]/WidgetClient.tsx`** — top-level client component. Owns: `hoveredUnitId`, `selectedUnitId`, `activeRuleId`. Uses `useActiveView`. Syncs active view to `?view=` URL param. Posts `bv:resize` messages to parent for iframe height. Fires `widget_load` on mount, `view_switch` on view change, `filter_change` on filter change.
+- **`public/embed.js`** — customer-paste script. Reads `data-project`, `data-target`, `data-height`, `data-radius`. Creates iframe at `/embed/{slug}`. Listens for `bv:resize` messages to update iframe height. Forwards `bv:analytics` events to parent-page GA4/Meta Pixel.
+
+#### Hard constraints — session 4 audit
+
+- All user-facing strings via `resolveLabel()` — verified
+- All polygon SVG through `<PolygonOverlay>` — verified
+- All image URL access via `useActiveView()` abstraction seam — verified
+- All analytics via `analytics.track()` — verified
+- Container queries only, no viewport media queries — verified
+- `revalidate = 60` on `/embed/[slug]/page.tsx` — verified
+- No `localStorage`; sessionStorage used only for popup-dismissed flag — verified
+- Zero TypeScript errors — `npx tsc --noEmit` passes clean
+
+---
+
+### What's next (Week 3 continued / Week 4)
+
+1. **Test the embed**: visit `http://localhost:3000/embed/test-project` after `npm run dev`
+2. **Enter real customer data**: replace seed apartments with real units, upload real building images in the editor, draw polygons
+3. **Week 4: Polish + customer onboarding**:
+   - Test on real WordPress + Bricks site (paste `embed.js` snippet)
+   - Mobile edge cases (popup bottom sheet, modal full-screen, touch targets)
+   - Image optimization (switch `<img>` to Next.js `<Image>` with Supabase transforms for thumbnails)
+   - `ProjectSettings` component — raw JSON editor for project-level config (labels, statuses, CTA, popup, analytics)
+   - Document embed snippet for customer
+   - Optional: deploy to Vercel, set production env vars
+
 ### What's next (Week 3)
 
 1. **Run migration**: `npx supabase db push` to create the `apartment-images` bucket (migration `0004`)
