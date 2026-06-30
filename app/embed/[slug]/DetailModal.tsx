@@ -7,9 +7,10 @@ import { track } from '@/lib/analytics';
 import ImageGallery from './ImageGallery';
 
 const FIELD_KEYS = [
-  'price', 'size', 'rooms', 'floor', 'balcony', 'parking',
-  'view_direction', 'energy_rating', 'ownership_type',
-  'monthly_cost', 'total_price', 'description',
+  'price', 'size', 'bra', 'primary_room', 'rooms', 'floor',
+  'balcony', 'parking', 'view_direction', 'energy_rating',
+  'ownership_type', 'monthly_cost', 'total_price',
+  'collective_debt', 'property_type', 'completion_year', 'description',
 ] as const;
 
 type FieldKey = typeof FIELD_KEYS[number];

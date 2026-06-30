@@ -18,9 +18,10 @@ type Props = {
 
 // Field keys that map to apartment data fields
 const FIELD_KEYS = [
-  'title', 'price', 'size', 'rooms', 'floor',
+  'title', 'price', 'size', 'bra', 'primary_room', 'rooms', 'floor',
   'balcony', 'parking', 'view_direction', 'energy_rating',
   'ownership_type', 'monthly_cost', 'total_price',
+  'collective_debt', 'property_type', 'completion_year',
 ] as const;
 
 type FieldKey = typeof FIELD_KEYS[number];

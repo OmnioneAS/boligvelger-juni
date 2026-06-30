@@ -19,7 +19,12 @@ export type VisibleField =
   | 'monthly_cost'
   | 'total_price'
   | 'ownership_type'
-  | 'description';
+  | 'description'
+  | 'collective_debt'
+  | 'property_type'
+  | 'completion_year'
+  | 'bra'
+  | 'primary_room';
 
 export type AnalyticsEventName =
   | 'widget_load'
@@ -176,6 +181,11 @@ export type Apartment = {
   monthly_cost?: string;
   total_price?: string;
   description?: string;
+  collective_debt?: string;
+  property_type?: string;
+  completion_year?: string;
+  bra?: string;
+  primary_room?: string;
   viewing_date?: string;
   viewing_note?: string;
   cta_override?: CtaConfig;

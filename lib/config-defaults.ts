@@ -37,6 +37,11 @@ export const DEFAULT_LABELS: Labels = {
   field_total_price: 'Totalpris',
   field_ownership_type: 'Eierform',
   field_description: 'Beskrivelse',
+  field_collective_debt: 'Fellesgjeld',
+  field_property_type: 'Boligtype',
+  field_completion_year: 'Ferdigstillelse',
+  field_bra: 'Bruksareal (BRA)',
+  field_primary_room: 'Primærrom (P-rom)',
 
   viewing_label: 'Visning',
   viewing_register: 'Meld interesse',

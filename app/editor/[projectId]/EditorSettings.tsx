@@ -22,8 +22,13 @@ const ALL_VISIBLE_FIELDS: { key: VisibleField; label: string }[] = [
   { key: 'energy_rating',  label: 'Energy rating' },
   { key: 'monthly_cost',   label: 'Monthly cost' },
   { key: 'total_price',    label: 'Total price' },
-  { key: 'ownership_type', label: 'Ownership type' },
-  { key: 'description',    label: 'Description' },
+  { key: 'ownership_type',  label: 'Ownership type' },
+  { key: 'description',     label: 'Description' },
+  { key: 'collective_debt', label: 'Fellesgjeld' },
+  { key: 'property_type',   label: 'Boligtype' },
+  { key: 'completion_year', label: 'Ferdigstillelse' },
+  { key: 'bra',             label: 'Bruksareal (BRA)' },
+  { key: 'primary_room',    label: 'Primærrom (P-rom)' },
 ];
 
 export default function EditorSettings({ project, onSaved, onClose }: Props) {
@@ -100,6 +105,24 @@ export default function EditorSettings({ project, onSaved, onClose }: Props) {
             </label>
           ))}
         </div>
+      </div>
+
+      {/* ── Field labels ── */}
+      <div className="px-5 py-4 flex flex-col gap-3">
+        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+          Field labels
+        </h3>
+        {ALL_VISIBLE_FIELDS.map(({ key }) => (
+          <div key={key} className="flex items-center gap-3">
+            <span className="text-xs text-zinc-400 font-mono w-28 shrink-0">{key}</span>
+            <input
+              type="text"
+              value={labels[`field_${key}`] ?? ''}
+              onChange={e => setLabel(`field_${key}`, e.target.value)}
+              className="flex-1 text-sm border border-zinc-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            />
+          </div>
+        ))}
       </div>
 
       {/* ── Status labels ── */}

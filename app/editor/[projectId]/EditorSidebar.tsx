@@ -25,6 +25,11 @@ type StringField =
   | 'monthly_cost'
   | 'total_price'
   | 'description'
+  | 'collective_debt'
+  | 'property_type'
+  | 'completion_year'
+  | 'bra'
+  | 'primary_room'
   | 'viewing_date'
   | 'viewing_note';
 
@@ -63,7 +68,12 @@ const FIELD_CONFIGS: FieldConfig[] = [
   { key: 'ownership_type', getLabel: p => resolveLabel(p.labels, 'field_ownership_type'), inputType: 'text',           isEmbedField: true  },
   { key: 'monthly_cost',   getLabel: p => resolveLabel(p.labels, 'field_monthly_cost'),   inputType: 'text',           isEmbedField: true  },
   { key: 'total_price',    getLabel: p => resolveLabel(p.labels, 'field_total_price'),    inputType: 'text',           isEmbedField: true  },
-  { key: 'description',    getLabel: p => resolveLabel(p.labels, 'field_description'),    inputType: 'textarea',       isEmbedField: true  },
+  { key: 'description',    getLabel: p => resolveLabel(p.labels, 'field_description'),    inputType: 'textarea', isEmbedField: true  },
+  { key: 'collective_debt',  getLabel: p => resolveLabel(p.labels, 'field_collective_debt'),  inputType: 'text', isEmbedField: true  },
+  { key: 'property_type',    getLabel: p => resolveLabel(p.labels, 'field_property_type'),    inputType: 'text', isEmbedField: true  },
+  { key: 'completion_year',  getLabel: p => resolveLabel(p.labels, 'field_completion_year'),  inputType: 'text', isEmbedField: true  },
+  { key: 'bra',              getLabel: p => resolveLabel(p.labels, 'field_bra'),              inputType: 'text', isEmbedField: true  },
+  { key: 'primary_room',     getLabel: p => resolveLabel(p.labels, 'field_primary_room'),     inputType: 'text', isEmbedField: true  },
   // Admin-only fields — labels from EDITOR_INTERNAL_STRINGS, never in visible_fields.
   { key: 'viewing_date',   getLabel: () => EDITOR_INTERNAL_STRINGS.field_viewing_date,   inputType: 'datetime-local', isEmbedField: false },
   { key: 'viewing_note',   getLabel: () => EDITOR_INTERNAL_STRINGS.field_viewing_note,   inputType: 'text',           isEmbedField: false },
@@ -85,7 +95,12 @@ function initFormValues(apt: Apartment): FormValues {
     ownership_type: apt.ownership_type ?? '',
     monthly_cost:   apt.monthly_cost ?? '',
     total_price:    apt.total_price ?? '',
-    description:    apt.description ?? '',
+    description:     apt.description ?? '',
+    collective_debt: apt.collective_debt ?? '',
+    property_type:   apt.property_type ?? '',
+    completion_year: apt.completion_year ?? '',
+    bra:             apt.bra ?? '',
+    primary_room:    apt.primary_room ?? '',
     // datetime-local expects "YYYY-MM-DDTHH:MM" — slice ISO to 16 chars.
     viewing_date:   apt.viewing_date ? apt.viewing_date.slice(0, 16) : '',
     viewing_note:   apt.viewing_note ?? '',
