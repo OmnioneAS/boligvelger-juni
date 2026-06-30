@@ -247,34 +247,50 @@ All constraints from CLAUDE.md were upheld: no `any`, no hardcoded strings (labe
 
 ---
 
-### What's next (Week 3 continued / Week 4)
+---
 
-1. **Test the embed**: visit `http://localhost:3000/embed/test-project` after `npm run dev`
-2. **Enter real customer data**: replace seed apartments with real units, upload real building images in the editor, draw polygons
-3. **Week 4: Polish + customer onboarding**:
-   - Test on real WordPress + Bricks site (paste `embed.js` snippet)
-   - Mobile edge cases (popup bottom sheet, modal full-screen, touch targets)
-   - Image optimization (switch `<img>` to Next.js `<Image>` with Supabase transforms for thumbnails)
-   - `ProjectSettings` component — raw JSON editor for project-level config (labels, statuses, CTA, popup, analytics)
-   - Document embed snippet for customer
-   - Optional: deploy to Vercel, set production env vars
+### Session 6 complete (2026-06-30) — editor tools + sticky CTA
 
-### What's next (Week 3)
+#### What was built
 
-1. **Run migration**: `npx supabase db push` to create the `apartment-images` bucket (migration `0004`)
-2. **Public embed** (`/embed/[slug]`):
-   - `app/embed/[slug]/page.tsx` with `revalidate = 60`
-   - `WidgetClient.tsx` — top-level client component
-   - `ImageCanvas.tsx` — view image + SVG polygon overlay using `useActiveView()`
-   - `PolygonOverlay.tsx` — data-driven SVG (status color/stroke from `project.statuses`)
-   - `ViewSwitcher.tsx` — public pill toggle
-   - `CardList.tsx` + `Card.tsx` — reads `visible_fields` + `labels`
-   - `FilterBar.tsx` — from `statuses` with rule-based architecture
-   - `DetailModal.tsx` + `ImageGallery.tsx` — apartment images, CTA, viewing section
-   - `ViewingBadge.tsx`, `PromoPopup.tsx`
-3. **Bidirectional hover** — polygon ↔ card cross-highlight via `unitId`
-4. **Container-query responsive layout** — desktop 60/40 split, mobile stacked
-5. **`embed.js`** — customer-facing script: creates iframe, postMessage height
-6. **Analytics** — `lib/analytics.ts` wired through `WidgetClient`
+- **Delete apartment** (`lib/actions.ts`, `EditorSidebar.tsx`, `EditorShell.tsx`):
+  - `deleteApartment(id)` server action
+  - Small red "Delete" link in apartment header → inline confirmation on white background with red "Yes, delete" button
+  - On confirm: apartment removed from state, sidebar returns to list view
+
+- **Project Settings UI** (`lib/actions.ts`, `app/editor/[projectId]/EditorSettings.tsx`, `EditorShell.tsx`):
+  - `saveProjectConfig(id, patch)` server action — patches `visible_fields`, `labels`, `cta_config`, `popup_config`
+  - "Settings" toggle button in editor header; when active, replaces canvas+sidebar with settings panel
+  - Settings panel sections: visible fields (checkboxes), status labels (text inputs), CTA (type/url/label), popup (enable/delay/cta url)
+  - Single "Save settings" blue button at bottom; shows "Saved ✓" or "Save failed" inline
+  - `EditorShell` now holds `currentProject` in state so settings saves reflect immediately without page reload
+  - `effectiveProject = { ...currentProject, views }` merges mutable project config with views state
+
+- **Sticky CTA button** (`app/embed/[slug]/WidgetClient.tsx`, `PromoPopup.tsx`, `lib/config-defaults.ts`):
+  - Blue pill button fixed bottom-right of embed — always visible, triggers popup on click
+  - `popupKey` state: incrementing it remounts `<PromoPopup key={popupKey}>` to force reshow
+  - `noDelay` prop on PromoPopup: skips `delay_ms` and sessionStorage check on manual trigger
+  - Button and PromoPopup moved outside `bv-root` div — `container-type: inline-size` on bv-root was breaking `position: fixed`
+  - Label configurable via `sticky_cta_label` in `DEFAULT_LABELS` (default: "Interessert?"), editable through Settings
+
+#### Decisions
+- Popup retrigger uses `key` remount pattern (clean) rather than lifting `visible` state or adding imperative refs
+- Settings panel does NOT auto-save — single Save button for atomic commit of all changes
+- Delete requires explicit confirmation step to prevent accidental data loss
+
+---
+
+### What's next
+
+**Waiting on real content (do when ready):**
+- Run `npx supabase db push` — applies `0004_apartment_images_bucket.sql` (needed before image upload)
+- Upload real building image in editor toolbar
+- Add real apartments + draw polygons
+- Test embed with real data on WordPress
+
+**Remaining polish (can do any time):**
+- Mobile edge cases — popup bottom sheet, modal full-screen on small screens, touch targets
+- Image optimization — switch `<img>` to Next.js `<Image>` with Supabase image transforms for thumbnails
+- Field labels in Settings panel (currently only status labels are editable; field labels like "Pris", "Størrelse" are not yet exposed)
 
 <!-- Update this section after each work session so future Claude sessions know exactly where things stand. -->
