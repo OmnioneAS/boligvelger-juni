@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Project, Apartment } from '@/lib/types';
 import { useActiveView } from '@/lib/useActiveView';
+import { resolveLabel } from '@/lib/config-defaults';
 import { track } from '@/lib/analytics';
 import { buildStatusRules } from './FilterBar';
 import ViewSwitcher from './ViewSwitcher';
@@ -23,6 +24,12 @@ export default function WidgetClient({ project, apartments }: Props) {
   const [polygonHoveredUnitId, setPolygonHoveredUnitId] = useState<string | null>(null);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [activeRuleId, setActiveRuleId] = useState('all');
+  const [popupKey, setPopupKey] = useState(0);
+
+  const triggerPopup = useCallback(() => {
+    sessionStorage.removeItem(`bv:popup_seen:${project.slug}`);
+    setPopupKey(k => k + 1);
+  }, [project.slug]);
 
   const filterRules = buildStatusRules(project);
   const activeFilter = filterRules.find((r) => r.id === activeRuleId) ?? filterRules[0];
@@ -94,6 +101,7 @@ export default function WidgetClient({ project, apartments }: Props) {
   const selectedApartment = apartments.find((a) => a.unit_id === selectedUnitId) ?? null;
 
   return (
+    <>
     <div className="bv-root min-h-screen bg-white">
       <div className="bv-layout">
         {/* Canvas column */}
@@ -142,9 +150,17 @@ export default function WidgetClient({ project, apartments }: Props) {
           onClose={() => setSelectedUnitId(null)}
         />
       )}
-
-      {/* Promo popup */}
-      <PromoPopup project={project} apartments={apartments} />
     </div>
+
+    {/* Sticky CTA + popup outside bv-root to avoid container-type positioning context */}
+    <button
+      onClick={triggerPopup}
+      className="fixed bottom-4 right-4 z-40 bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+    >
+      {resolveLabel(project.labels, 'sticky_cta_label')}
+    </button>
+
+    <PromoPopup key={popupKey} project={project} apartments={apartments} noDelay={popupKey > 0} />
+    </>
   );
 }

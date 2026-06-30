@@ -52,6 +52,8 @@ export const DEFAULT_LABELS: Labels = {
   popup_viewing_cta: 'Meld interesse',
   popup_default_title: 'Interessert?',
   popup_default_cta: 'Kontakt megler',
+
+  sticky_cta_label: 'Interessert?',
 };
 
 // ── Statuses (Ledig / Reservert / Solgt) ────────────────────────────────────

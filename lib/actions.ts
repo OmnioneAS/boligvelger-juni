@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import type { Apartment, ViewDefinition } from '@/lib/types';
+import type { Apartment, Project, ViewDefinition } from '@/lib/types';
 
 // Allow null on every field so optional string columns can be cleared (→ NULL).
 // Supabase's REST API omits undefined values but respects explicit null.
@@ -54,6 +54,21 @@ export async function createApartment(
     return { ok: false, error: error?.message ?? 'Unknown error' };
   }
   return { ok: true, apartment: data as Apartment };
+}
+
+export async function saveProjectConfig(
+  id: string,
+  patch: Partial<Pick<Project, 'visible_fields' | 'labels' | 'cta_config' | 'popup_config' | 'statuses'>>,
+): Promise<{ ok: true; project: Project } | { ok: false; error: string }> {
+  const { data, error } = await db
+    .from('projects')
+    .update(patch)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error || !data) return { ok: false, error: error?.message ?? 'Unknown error' };
+  return { ok: true, project: data as Project };
 }
 
 export async function deleteApartment(

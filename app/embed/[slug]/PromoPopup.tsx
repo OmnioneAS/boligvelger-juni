@@ -8,6 +8,7 @@ import { track } from '@/lib/analytics';
 type Props = {
   project: Project;
   apartments: Apartment[];
+  noDelay?: boolean;
 };
 
 function formatDate(iso: string): string {
@@ -19,19 +20,19 @@ function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function PromoPopup({ project, apartments }: Props) {
+export default function PromoPopup({ project, apartments, noDelay }: Props) {
   const [visible, setVisible] = useState(false);
   const cfg = project.popup_config;
 
   useEffect(() => {
     if (!cfg.enabled) return;
     const sessionKey = `bv:popup_seen:${project.slug}`;
-    if (cfg.show_once_per_session && sessionStorage.getItem(sessionKey)) return;
+    if (!noDelay && cfg.show_once_per_session && sessionStorage.getItem(sessionKey)) return;
 
     const t = setTimeout(() => {
       setVisible(true);
       track('popup_shown', { slug: project.slug });
-    }, cfg.delay_ms);
+    }, noDelay ? 0 : cfg.delay_ms);
 
     return () => clearTimeout(t);
   }, [cfg, project.slug]);
