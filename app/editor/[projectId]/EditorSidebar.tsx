@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Project, Apartment, ApartmentImage, VisibleField } from '@/lib/types';
 import { resolveLabel } from '@/lib/config-defaults';
 import { EDITOR_INTERNAL_STRINGS } from '@/lib/editor-strings';
-import { saveApartmentFields, createApartment } from '@/lib/actions';
+import { saveApartmentFields, createApartment, deleteApartment } from '@/lib/actions';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,6 +45,7 @@ type Props = {
   onSaved: (updated: Apartment) => void;
   onSelectUnit: (unitId: string) => void;
   onApartmentCreated: (apt: Apartment) => void;
+  onApartmentDeleted: (id: string) => void;
 };
 
 // ── Field configuration (drives the form rows) ────────────────────────────────
@@ -276,7 +277,7 @@ function ApartmentImages({
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export default function EditorSidebar({ project, apartments, apartment, onSaved, onSelectUnit, onApartmentCreated }: Props) {
+export default function EditorSidebar({ project, apartments, apartment, onSaved, onSelectUnit, onApartmentCreated, onApartmentDeleted }: Props) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [addUnitId, setAddUnitId] = useState('');
   const [addTitle, setAddTitle] = useState('');
@@ -309,6 +310,24 @@ export default function EditorSidebar({ project, apartments, apartment, onSaved,
     },
     [addUnitId, addTitle, addStatus, apartments.length, project.id, onApartmentCreated],
   );
+
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  const handleDelete = useCallback(async () => {
+    if (!apartment) return;
+    setDeleting(true);
+    setDeleteError('');
+    const result = await deleteApartment(apartment.id);
+    setDeleting(false);
+    if (result.ok) {
+      onApartmentDeleted(apartment.id);
+    } else {
+      setDeleteError(EDITOR_INTERNAL_STRINGS.delete_apartment_error);
+      setConfirmDelete(false);
+    }
+  }, [apartment, onApartmentDeleted]);
 
   const [formValues, setFormValues] = useState<FormValues>(
     apartment ? initFormValues(apartment) : initFormValues({} as Apartment),
@@ -503,22 +522,53 @@ export default function EditorSidebar({ project, apartments, apartment, onSaved,
           <span className="font-mono text-xs bg-zinc-100 text-zinc-500 px-2 py-0.5 rounded">
             {apartment.unit_id}
           </span>
-          {/* Save status indicator */}
-          <span
-            className={[
-              'text-xs font-medium transition-opacity',
-              saveStatus === 'idle'   ? 'opacity-0'              : 'opacity-100',
-              saveStatus === 'saving' ? 'text-zinc-400'          : '',
-              saveStatus === 'saved'  ? 'text-emerald-600'       : '',
-              saveStatus === 'error'  ? 'text-red-500'           : '',
-            ].join(' ')}
-            aria-live="polite"
-          >
-            {saveStatus === 'saving' && EDITOR_INTERNAL_STRINGS.saving}
-            {saveStatus === 'saved'  && EDITOR_INTERNAL_STRINGS.saved}
-            {saveStatus === 'error'  && EDITOR_INTERNAL_STRINGS.save_error}
-          </span>
+          <div className="flex items-center gap-3">
+            {/* Save status indicator */}
+            <span
+              className={[
+                'text-xs font-medium transition-opacity',
+                saveStatus === 'idle'   ? 'opacity-0'        : 'opacity-100',
+                saveStatus === 'saving' ? 'text-zinc-400'    : '',
+                saveStatus === 'saved'  ? 'text-emerald-600' : '',
+                saveStatus === 'error'  ? 'text-red-500'     : '',
+              ].join(' ')}
+              aria-live="polite"
+            >
+              {saveStatus === 'saving' && EDITOR_INTERNAL_STRINGS.saving}
+              {saveStatus === 'saved'  && EDITOR_INTERNAL_STRINGS.saved}
+              {saveStatus === 'error'  && EDITOR_INTERNAL_STRINGS.save_error}
+            </span>
+            <button
+              onClick={() => { setConfirmDelete(true); setDeleteError(''); }}
+              className="text-xs text-red-400 hover:text-red-600"
+            >
+              {EDITOR_INTERNAL_STRINGS.delete_apartment_btn}
+            </button>
+          </div>
         </div>
+
+        {/* Inline delete confirmation */}
+        {confirmDelete && (
+          <div className="rounded border border-red-200 bg-white px-3 py-2 flex flex-col gap-2">
+            <p className="text-xs text-red-700">{EDITOR_INTERNAL_STRINGS.delete_apartment_confirm}</p>
+            {deleteError && <p className="text-xs text-red-500">{deleteError}</p>}
+            <div className="flex gap-2">
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 text-sm font-medium bg-red-600 text-white rounded px-3 py-1.5 hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {deleting ? EDITOR_INTERNAL_STRINGS.delete_apartment_deleting : EDITOR_INTERNAL_STRINGS.delete_apartment_confirm_yes}
+              </button>
+              <button
+                onClick={() => { setConfirmDelete(false); setDeleteError(''); }}
+                className="text-sm text-zinc-500 hover:text-zinc-700 border border-zinc-200 rounded px-3 py-1.5"
+              >
+                {EDITOR_INTERNAL_STRINGS.delete_apartment_cancel}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Title */}
         <div>

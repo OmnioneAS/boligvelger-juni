@@ -33,6 +33,12 @@ export default function EditorShell({ project, apartments: initialApartments }: 
     setSelectedUnitId(apt.unit_id);
   }, []);
 
+  // Sidebar: apartment deleted — remove from list and deselect.
+  const handleApartmentDeleted = useCallback((id: string) => {
+    setApartments(prev => prev.filter(a => a.id !== id));
+    setSelectedUnitId(null);
+  }, []);
+
   // Image uploader: replace views array with patched version.
   const handleViewsUpdated = useCallback((newViews: ViewDefinition[]) => {
     setViews(newViews);
@@ -110,6 +116,7 @@ export default function EditorShell({ project, apartments: initialApartments }: 
           onSaved={handleSaved}
           onSelectUnit={setSelectedUnitId}
           onApartmentCreated={handleApartmentCreated}
+          onApartmentDeleted={handleApartmentDeleted}
         />
       </div>
     </div>

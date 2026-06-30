@@ -42,6 +42,14 @@ export const EDITOR_INTERNAL_STRINGS = {
   uploading: 'Uploading…',
   upload_error: 'Upload failed',
 
+  // ── Delete apartment ──────────────────────────────────────────────────────
+  delete_apartment_btn: 'Delete',
+  delete_apartment_confirm: 'Delete this apartment? All polygons will be lost.',
+  delete_apartment_confirm_yes: 'Yes, delete',
+  delete_apartment_cancel: 'Cancel',
+  delete_apartment_deleting: 'Deleting…',
+  delete_apartment_error: 'Delete failed',
+
   // ── Add apartment form ────────────────────────────────────────────────────
   add_apartment_btn: '+ Add apartment',
   add_apartment_unit_id_placeholder: 'e.g. H0101',

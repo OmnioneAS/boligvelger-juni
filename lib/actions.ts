@@ -56,6 +56,14 @@ export async function createApartment(
   return { ok: true, apartment: data as Apartment };
 }
 
+export async function deleteApartment(
+  id: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { error } = await db.from('apartments').delete().eq('id', id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export async function saveProjectViews(
   id: string,
   views: ViewDefinition[],
