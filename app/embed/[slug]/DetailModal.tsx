@@ -54,15 +54,15 @@ export default function DetailModal({ apartment, project, onClose }: Props) {
   return (
     /* Backdrop */
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+      className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center sm:p-4 bg-black/50"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      {/* Panel */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      {/* Panel — bottom sheet on mobile, centered modal on desktop */}
+      <div className="relative bg-white w-full rounded-t-2xl sm:rounded-2xl shadow-2xl sm:max-w-lg max-h-[92vh] overflow-y-auto">
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-500 text-sm"
+          className="absolute top-3 right-3 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-500 text-sm"
           aria-label={resolveLabel(project.labels, 'cta_close')}
         >
           ✕

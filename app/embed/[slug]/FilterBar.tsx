@@ -45,7 +45,7 @@ export default function FilterBar({ rules, activeRuleId, onSelect }: Props) {
             key={rule.id}
             onClick={() => onSelect(rule.id)}
             className={[
-              'px-3 py-1 rounded-full text-sm font-medium transition-colors',
+              'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
               active
                 ? 'bg-zinc-900 text-white'
                 : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200',

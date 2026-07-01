@@ -72,9 +72,9 @@ export default function PromoPopup({ project, apartments, noDelay }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 pointer-events-none sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center pointer-events-none">
       <div
-        className="pointer-events-auto bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5 flex flex-col gap-3"
+        className="pointer-events-auto bg-white w-full rounded-t-2xl sm:rounded-2xl sm:max-w-sm shadow-2xl p-5 flex flex-col gap-3"
         style={{ animation: 'slideUp 0.25s ease' }}
       >
         <div className="flex items-start justify-between gap-2">
