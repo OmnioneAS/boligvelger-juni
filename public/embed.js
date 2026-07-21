@@ -8,6 +8,16 @@
  *           data-target="bv-embed-SLUG"
  *           async></script>
  *
+ * To embed a single standalone apartment instead of the full widget, add
+ * data-unit with that apartment's unit_id:
+ *
+ *   <div id="bv-embed-SLUG-UNIT"></div>
+ *   <script src="https://yourapp.vercel.app/embed.js"
+ *           data-project="SLUG"
+ *           data-unit="UNIT_ID"
+ *           data-target="bv-embed-SLUG-UNIT"
+ *           async></script>
+ *
  * Optional data attributes:
  *   data-height   Initial iframe height in px (default: 600)
  *   data-radius   Border radius for the iframe (e.g. "12px")
@@ -17,6 +27,7 @@
   if (!script) return;
 
   var slug = script.getAttribute('data-project');
+  var unitId = script.getAttribute('data-unit');
   var targetId = script.getAttribute('data-target');
   var initialHeight = parseInt(script.getAttribute('data-height') || '600', 10);
   var radius = script.getAttribute('data-radius') || '0px';
@@ -37,7 +48,7 @@
   var appUrl = scriptSrc.replace(/\/embed\.js.*$/, '') || 'https://localhost:3000';
 
   var iframe = document.createElement('iframe');
-  iframe.src = appUrl + '/embed/' + slug;
+  iframe.src = appUrl + '/embed/' + slug + (unitId ? '/' + unitId : '');
   iframe.style.cssText = [
     'width:100%',
     'height:' + initialHeight + 'px',
