@@ -75,6 +75,10 @@ export type CtaConfig = {
   label_key: string;
   url?: string;
   modal_content?: string;
+  // Per-project URL template for navigating to a standalone unit page instead
+  // of opening DetailModal in place, e.g. "https://example.com/apartment/?unit={unitId}".
+  // Unset (default) keeps the modal behavior for every existing project.
+  detail_page_url?: string;
 };
 
 // ── Popup config ─────────────────────────────────────────────────────────────

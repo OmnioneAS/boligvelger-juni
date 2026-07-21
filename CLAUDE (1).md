@@ -280,17 +280,53 @@ All constraints from CLAUDE.md were upheld: no `any`, no hardcoded strings (labe
 
 ---
 
+### Session 6.5 (2026-06-30 → 2026-07-01) — Norwegian fields + mobile polish
+
+Two small commits landed after the Session 6 notes were written and were never logged. Recording them here for the record:
+
+- **`66f0d6a`** — Norwegian real estate fields (`collective_debt`, `property_type`, `completion_year`, `bra`, `primary_room`) added to `apartments` (migration `0005_add_apartment_fields.sql`), plus field labels became editable in the Settings panel (closing the "Field labels in Settings panel" item from the old "What's next" list).
+- **`fe533c5`** — mobile polish: `DetailModal` and `PromoPopup` became bottom sheets on mobile / centered panels on desktop, larger touch targets on the close button and filter chips (closing the old "Mobile edge cases" item).
+
+---
+
+### Session 7 (2026-07-21) — standalone single-apartment page + configurable navigation
+
+#### What was built
+
+- **`app/embed/[slug]/ApartmentDetailContent.tsx`** — new shared presentational component holding the apartment detail content (gallery, title/status, field grid, description, upcoming-viewing block, CTA button + `handleCta`). Extracted from `DetailModal.tsx` so both the modal and the new standalone page render identical content from one source. `onClose` is optional — the Escape-key listener only attaches when it's provided. `apartment_view` fires from this component's mount effect, so it fires correctly whether the content is mounted inside the modal or directly on the standalone page — no separate click-time tracking needed.
+- **`app/embed/[slug]/DetailModal.tsx`** — reduced to backdrop + panel chrome (close button, bottom-sheet/centered-modal shell) wrapping `<ApartmentDetailContent>`. Behavior unchanged.
+- **`app/embed/[slug]/[unitId]/page.tsx`** — new standalone unit route. Server component, `revalidate = 60`, matching the rest of the embed's ISR pattern. Fetches `project` by slug and the single `apartment` by `project_id` + `unit_id` directly via the service-role `db` client (same pattern as `/embed/[slug]/page.tsx`), wrapped in React's `cache()` so `generateMetadata` and the page body share one DB round trip per request. `notFound()` if either is missing. Renders only `<ApartmentDetailContent>` — no `WidgetClient` chrome (no canvas, card list, filter bar, or popup).
+- **`generateMetadata`** on the same route — per-unit `<title>`, meta description (apartment description, falling back to price/size, falling back to project name), Open Graph tags (`og:title`, `og:description`, `og:image` from the first sorted apartment image), and a canonical URL built from `NEXT_PUBLIC_APP_URL`.
+- **`app/embed/[slug]/[unitId]/EmbedResizeSync.tsx`** — small client component mirroring the `bv:resize` `postMessage` + `ResizeObserver` effect `WidgetClient` already does for the main embed, so `embed.js` can size a WordPress iframe pointed at this standalone page correctly. `WidgetClient.tsx` itself was not touched.
+- **`lib/types.ts`** — added `detail_page_url?: string` to `CtaConfig`: a per-project URL template (e.g. `https://example.com/apartment/?unit={unitId}`) for navigating to an external standalone page instead of opening `DetailModal`. Left out of `config-defaults.ts` intentionally — unset by default so no existing project's behavior changes.
+- **`app/embed/[slug]/WidgetClient.tsx`** — `handleSelect` (the single choke point for both card clicks and polygon clicks) now checks `project.cta_config.detail_page_url` first: if set, substitutes `{unitId}` and navigates the top-level browser via `window.top.location.href` (breaks out of a WordPress iframe correctly); if unset, falls through to the existing `setSelectedUnitId` modal-open behavior unchanged.
+
+#### Decisions
+
+- The spec (`SPEC.md` "Deep linking") originally defined `/embed/[slug]/[unitId]` as "loads widget with modal pre-opened" — that behavior was never actually built. This session repurposes the same URL to mean the standalone chrome-less page instead, since that's what the actual use case (a link that shows *only* one apartment, matching how Finn.no ad pages work) needs. `SPEC.md` line 650 is now stale and should be corrected to match if anyone reads it as ground truth.
+- `detail_page_url` navigation lives in `WidgetClient.handleSelect`, not `Card.tsx`, so both card clicks and canvas polygon clicks get the same behavior from one place.
+- Work done on `feature/single-apartment-page` branch, not directly on `main`.
+
+#### Hard constraints — session 7 audit
+
+- No `any` — `npx tsc --noEmit` and `npm run build` both pass clean
+- No hardcoded strings — no new user-facing strings were added; existing `resolveLabel()` calls carried over unchanged in the extracted component
+- No hardcoded customer domain/URL — `detail_page_url` only ever comes from `project.cta_config`, never inlined in component code
+- `SUPABASE_SERVICE_ROLE_KEY` server-only — only used via `lib/db.ts`'s `db` client in the new route's server-side `getData()`
+- Verified against live data: `/embed/test-project/unit1` returns 200 with correct per-unit metadata and zero widget chrome; `/embed/test-project/does-not-exist` returns 404; `/embed/test-project` (main widget) unaffected; live `test-project.cta_config` has no `detail_page_url` set, confirming the modal path is untouched for existing projects
+
 ### What's next
 
+**Blocking Phase 2 (WordPress side) — do once Phase 1 above is merged and deployed:**
+- Build the WordPress `/apartment/?unit=X` template that iframes `/embed/[slug]/[unitId]`, with server-side (PHP) per-unit `<title>`/meta/OG tags pulled from `/api/public/[slug]`
+- Only then set `detail_page_url` in the real project's `cta_config` — that's the switch that flips card/polygon clicks from modal to WordPress navigation, and should happen last, after both pages are confirmed working independently
+
 **Waiting on real content (do when ready):**
-- Run `npx supabase db push` — applies `0004_apartment_images_bucket.sql` (needed before image upload)
-- Upload real building image in editor toolbar
-- Add real apartments + draw polygons
+- Run `npx supabase db push` — confirm `0005_add_apartment_fields.sql` is applied on the remote project
 - Test embed with real data on WordPress
 
 **Remaining polish (can do any time):**
-- Mobile edge cases — popup bottom sheet, modal full-screen on small screens, touch targets
 - Image optimization — switch `<img>` to Next.js `<Image>` with Supabase image transforms for thumbnails
-- Field labels in Settings panel (currently only status labels are editable; field labels like "Pris", "Størrelse" are not yet exposed)
+- Dedicated `/api/public/[slug]/[unitId]` endpoint (nice-to-have; the WordPress PHP side can filter the existing `/api/public/[slug]` response client-side instead)
 
 <!-- Update this section after each work session so future Claude sessions know exactly where things stand. -->
