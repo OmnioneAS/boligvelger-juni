@@ -186,6 +186,37 @@ export default function EditorSettings({ project, onSaved, onClose }: Props) {
         </div>
       </div>
 
+      {/* ── Navigation (standalone unit page) ── */}
+      <div className="px-5 py-4 flex flex-col gap-3">
+        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+          Navigation
+        </h3>
+        <div>
+          <label className="text-xs text-zinc-400 block mb-0.5">
+            Detail page URL (leave empty to keep the in-widget modal)
+          </label>
+          <input
+            type="text"
+            placeholder="https://example.com/apartment/?unit={unitId}"
+            value={ctaConfig.detail_page_url ?? ''}
+            onChange={e => setCtaConfig(prev => ({ ...prev, detail_page_url: e.target.value || undefined }))}
+            className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-zinc-400 block mb-0.5">
+            Overview page URL (shown as a &quot;back&quot; button on the standalone unit page)
+          </label>
+          <input
+            type="text"
+            placeholder="https://example.com/apartments/"
+            value={ctaConfig.overview_url ?? ''}
+            onChange={e => setCtaConfig(prev => ({ ...prev, overview_url: e.target.value || undefined }))}
+            className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+          />
+        </div>
+      </div>
+
       {/* ── Popup ── */}
       <div className="px-5 py-4 flex flex-col gap-3">
         <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Popup</h3>

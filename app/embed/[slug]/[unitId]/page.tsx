@@ -3,8 +3,10 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import type { Project, Apartment } from '@/lib/types';
+import { resolveLabel } from '@/lib/config-defaults';
 import ApartmentDetailContent from '../ApartmentDetailContent';
 import EmbedResizeSync from './EmbedResizeSync';
+import BackToOverviewButton from './BackToOverviewButton';
 
 export const revalidate = 60;
 
@@ -65,10 +67,17 @@ export default async function UnitPage({ params }: Params) {
   if (!data) notFound();
 
   const { project, apartment } = data;
+  const overviewUrl = project.cta_config.overview_url;
 
   return (
     <div className="min-h-screen bg-white max-w-lg mx-auto">
       <EmbedResizeSync slug={slug} />
+      {overviewUrl && (
+        <BackToOverviewButton
+          overviewUrl={overviewUrl}
+          label={resolveLabel(project.labels, 'cta_back_to_overview')}
+        />
+      )}
       <ApartmentDetailContent apartment={apartment} project={project} />
     </div>
   );

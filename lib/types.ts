@@ -79,6 +79,9 @@ export type CtaConfig = {
   // of opening DetailModal in place, e.g. "https://example.com/apartment/?unit={unitId}".
   // Unset (default) keeps the modal behavior for every existing project.
   detail_page_url?: string;
+  // Per-project URL for the "back to overview" button on the standalone unit
+  // page (/embed/[slug]/[unitId]). Unset (default) hides the button.
+  overview_url?: string;
 };
 
 // ── Popup config ─────────────────────────────────────────────────────────────
