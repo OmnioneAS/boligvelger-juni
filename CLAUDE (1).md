@@ -73,6 +73,32 @@ Required in `.env.local` and in Vercel project settings:
 - `EDITOR_SHARED_SECRET` — protects `/editor/*` routes in v1
 - `NEXT_PUBLIC_APP_URL` — used to build canonical embed URLs
 
+## Go-live checklist — staging to production domain swap
+
+The WordPress side (`forbrukenstg.wpenginepowered.com`, currently staging) is
+referenced in a few places that live *outside* WP Engine's automatic
+staging→production domain swap — a plugin file and a separate app's
+database aren't touched by that process, so they have to be updated by
+hand when the real production domain goes live. This is exactly the kind
+of cross-system detail that's obvious mid-build and easy to forget weeks
+later, so check every item below at go-live:
+
+- [ ] `BV_OVERVIEW_URL` constant in `wp-content/mu-plugins/boligvelger.php` — a hardcoded PHP constant, not DB content, so WP Engine's staging-push search-and-replace will **not** catch it
+- [ ] `BV_PROJECT_SLUG` in the same file — only needs changing if the *Supabase* project slug also changes for go-live (unrelated to the domain swap itself, but easy to conflate — check it while you're in the file)
+- [ ] App Settings panel → **Detail page URL**, per project using this feature (`project.cta_config.detail_page_url`) — lives in Supabase, entirely outside WordPress's domain-swap process
+- [ ] App Settings panel → **Overview page URL**, per project using this feature (`project.cta_config.overview_url`) — same as above
+- [ ] RankMath canonical / site URL settings in WP admin, if anything there is staging-specific rather than using `home_url()` dynamically
+- [ ] Re-test the full click flow end to end on the new domain: overview widget → click apartment → standalone page → CTA → back-to-overview button
+- [ ] View Page Source on a real unit URL on the new domain and confirm `<title>`, `og:*`, and canonical tags all reflect the new domain, not the staging one
+- [ ] Share a test link on the new domain (WhatsApp/iMessage/Slack) to confirm the link preview actually pulls the new metadata — social platforms cache OG previews per-URL, so a *new* domain gets a fresh preview but is worth confirming once
+
+Separate but related: if the **Next.js app itself** ever moves off
+`boligvelger-juni.vercel.app` onto a custom domain, that's a different swap —
+update `NEXT_PUBLIC_APP_URL` in Vercel env vars, redeploy, and re-verify
+canonical/OG URLs there too. Also update `BV_APP_URL` in the mu-plugin and
+the `src` in any raw `embed.js` script tags pasted into Bricks Code
+elements, since those point at the app's domain, not WordPress's.
+
 ## Commands
 
 - `npm run dev` — local dev on http://localhost:3000
