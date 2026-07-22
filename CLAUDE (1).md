@@ -341,18 +341,37 @@ Two small commits landed after the Session 6 notes were written and were never l
 - `SUPABASE_SERVICE_ROLE_KEY` server-only — only used via `lib/db.ts`'s `db` client in the new route's server-side `getData()`
 - Verified against live data: `/embed/test-project/unit1` returns 200 with correct per-unit metadata and zero widget chrome; `/embed/test-project/does-not-exist` returns 404; `/embed/test-project` (main widget) unaffected; live `test-project.cta_config` has no `detail_page_url` set, confirming the modal path is untouched for existing projects
 
+### Session 8 (2026-07-21 → 2026-07-22) — WordPress integration, View full page link, short_description
+
+Four merged branches plus one external (non-repo) WordPress deliverable, in order:
+
+1. **`feature/embed-js-unit-param`** — `public/embed.js` gained an optional `data-unit` attribute: `data-project` + `data-unit` embeds a single standalone apartment via the same script-tag pattern as the full widget, instead of a hand-written iframe with no auto-resize. Omitting `data-unit` is unchanged.
+2. **`feature/overview-back-link`** — added `cta_config.overview_url` (mirrors `detail_page_url`): drives a "back to all apartments" button on the standalone unit page, shown only when set. Both `detail_page_url` and `overview_url` are now editable in the editor's Settings panel (previously required a raw DB edit).
+3. **WordPress mu-plugin** (`wp-content/mu-plugins/boligvelger.php` on `forbrukenstg.wpenginepowered.com` — lives on the WP server, not in this repo): a `[leilighet_detail]` shortcode reads `?unit=` and renders the right `data-unit` embed; `bv_current_unit_data()` fetches + 60s-transient-caches from `/api/public/[slug]`; missing/invalid `?unit=` redirects to the overview page; RankMath filter hooks (`rank_math/frontend/title`, `.../description`, `.../opengraph/facebook/*`, `.../frontend/canonical`) set per-unit metadata for link sharing. Later patched to skip the redirect when Bricks builder itself is loading/editing the page (`bricks_is_builder()` / `?bricks=run` fallback), otherwise the editor couldn't open the page to edit it.
+4. **`feature/detail-modal-view-full-page`** — **UX reversal**: card/polygon clicks now always open `DetailModal` again, regardless of `detail_page_url` (the Session 7 behavior of skipping the modal entirely when `detail_page_url` was set is gone). When `detail_page_url` is set, a "View full page" button appears instead — inside `DetailModal` and on each `Card` — navigating to the standalone page only on that explicit click. New label key `cta_view_full_page` ("Se hele siden" / "View full page"). `overview_url`/back-button behavior on the standalone page is unchanged.
+5. **`feature/short-description`** (Task 1 of the Featured Units widget spec — Task 2, the widget itself, is not started) — new `apartments.short_description` column (migration `0006`), separate from the existing `description`. `ApartmentDetailContent` now takes a required `variant: 'modal' | 'standalone'` prop: `'modal'` shows `short_description`, `'standalone'` shows the full `description` (unchanged). Empty `short_description` shows nothing — no fallback to the full description. Editable in `EditorSidebar`, labeled "(modal, cards)" vs. "(single-page only)" side by side; empty `short_description` shows a red inline warning, same visual weight as the existing "hidden in embed" badge.
+
+The live `test-project` now has both `detail_page_url` and `overview_url` set to real `forbrukenstg.wpenginepowered.com` URLs (set while testing the WordPress side) — so it's a live example of the "View full page" / "back to overview" flow, not just the default modal-only behavior most other projects will have.
+
+#### Decisions
+
+- Reverted the "skip modal entirely" behavior from Session 7 — modal is the default quick-view experience again; the standalone page is an optional, explicit destination (button in the modal, button on the card), not something that hijacks the normal click.
+- WordPress-side code (the mu-plugin) intentionally lives outside this repo — the user applies it manually via SFTP. This repo has no record of it beyond this note; if the mu-plugin needs to change, the source of truth is whatever's currently deployed on the WP server, not anything here.
+- `short_description` is not gated by `project.visible_fields` (unlike most other fields) — it shows whenever non-empty, in every context that uses it. No toggle was added for it.
+
+#### Hard constraints — session 8 audit
+
+- No `any`, no hardcoded strings/domains — verified via `npx tsc --noEmit` + `npm run build`, both clean, each branch
+- Every new optional field (`overview_url`, `detail_page_url` already existed, `short_description`) defaults to unset/empty and was verified against live data to not change existing projects' behavior before being turned on deliberately
+
 ### What's next
 
-**Blocking Phase 2 (WordPress side) — do once Phase 1 above is merged and deployed:**
-- Build the WordPress `/apartment/?unit=X` template that iframes `/embed/[slug]/[unitId]`, with server-side (PHP) per-unit `<title>`/meta/OG tags pulled from `/api/public/[slug]`
-- Only then set `detail_page_url` in the real project's `cta_config` — that's the switch that flips card/polygon clicks from modal to WordPress navigation, and should happen last, after both pages are confirmed working independently
-
-**Waiting on real content (do when ready):**
-- Run `npx supabase db push` — confirm `0005_add_apartment_fields.sql` is applied on the remote project
-- Test embed with real data on WordPress
+**Task 2 of the Featured Units widget spec (not started):** new `/embed/[slug]/featured` route — pinned + rotating random selection of apartments (`apartments.featured_pinned`, `projects.featured_config` jsonb), a new auto-advancing image carousel (nothing to reuse from `ImageGallery` — it has no auto-advance/cross-fade today), a compact 2×2 card grid, Settings UI for slot count/rotation/copy, and a new `--bv-*` CSS custom property theming layer (none exist anywhere in the codebase yet — this widget would be the first themeable part of the embed). Decided: selection reconciliation runs on ISR's render cadence (not literally per-request), theming is scoped to just this widget for now, and visual matching to the actual Bricks button/grid classes needs reference HTML/CSS/screenshots from the user before it can be pixel-matched — build a reasonable default first, refine after.
 
 **Remaining polish (can do any time):**
 - Image optimization — switch `<img>` to Next.js `<Image>` with Supabase image transforms for thumbnails
-- Dedicated `/api/public/[slug]/[unitId]` endpoint (nice-to-have; the WordPress PHP side can filter the existing `/api/public/[slug]` response client-side instead)
+- Dedicated `/api/public/[slug]/[unitId]` endpoint (nice-to-have; the WordPress PHP side already works by filtering the existing `/api/public/[slug]` response instead)
+
+**Stale doc, not yet corrected:** `SPEC.md` line 650 still describes `/embed/[slug]/[unitId]` as "loads widget with modal pre-opened" — that's not what was built (see Session 7 decisions). Worth fixing if anyone treats `SPEC.md` as ground truth.
 
 <!-- Update this section after each work session so future Claude sessions know exactly where things stand. -->
