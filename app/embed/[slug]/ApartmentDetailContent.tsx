@@ -16,6 +16,9 @@ const FIELD_KEYS = [
 type Props = {
   apartment: Apartment;
   project: Project;
+  // 'modal' shows short_description (DetailModal); 'standalone' shows the
+  // full description (the /embed/[slug]/[unitId] page).
+  variant: 'modal' | 'standalone';
   onClose?: () => void;
 };
 
@@ -27,7 +30,7 @@ function formatViewingDate(iso: string): string {
   });
 }
 
-export default function ApartmentDetailContent({ apartment, project, onClose }: Props) {
+export default function ApartmentDetailContent({ apartment, project, variant, onClose }: Props) {
   const cta = apartment.cta_override ?? project.cta_config;
   const visibleFields = new Set(project.visible_fields);
   const hasUpcomingViewing =
@@ -98,17 +101,28 @@ export default function ApartmentDetailContent({ apartment, project, onClose }: 
           })}
         </div>
 
-        {/* Description */}
-        {visibleFields.has('description') && apartment.description && (
-          <div>
-            <div className="text-xs text-zinc-400 mb-1">
-              {resolveLabel(project.labels, 'field_description')}
-            </div>
-            <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">
-              {apartment.description}
-            </p>
-          </div>
-        )}
+        {/* Description — short_description in the modal, full description on the standalone page */}
+        {variant === 'modal'
+          ? apartment.short_description && (
+              <div>
+                <div className="text-xs text-zinc-400 mb-1">
+                  {resolveLabel(project.labels, 'field_short_description')}
+                </div>
+                <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">
+                  {apartment.short_description}
+                </p>
+              </div>
+            )
+          : visibleFields.has('description') && apartment.description && (
+              <div>
+                <div className="text-xs text-zinc-400 mb-1">
+                  {resolveLabel(project.labels, 'field_description')}
+                </div>
+                <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">
+                  {apartment.description}
+                </p>
+              </div>
+            )}
 
         {/* Upcoming viewing */}
         {hasUpcomingViewing && (
