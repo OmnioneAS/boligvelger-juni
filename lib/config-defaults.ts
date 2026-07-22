@@ -42,6 +42,7 @@ export const DEFAULT_LABELS: Labels = {
   field_completion_year: 'Ferdigstillelse',
   field_bra: 'Bruksareal (BRA)',
   field_primary_room: 'Primærrom (P-rom)',
+  field_short_description: 'Kort beskrivelse',
 
   viewing_label: 'Visning',
   viewing_register: 'Meld interesse',
@@ -208,6 +209,7 @@ const ENGLISH_FALLBACKS: Record<string, string> = {
   field_total_price: 'Total price',
   field_ownership_type: 'Ownership type',
   field_description: 'Description',
+  field_short_description: 'Short description',
   viewing_label: 'Viewing',
   viewing_register: 'Register interest',
   cta_contact: 'Contact agent',

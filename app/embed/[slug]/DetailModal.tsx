@@ -41,7 +41,7 @@ export default function DetailModal({ apartment, project, onClose }: Props) {
           </div>
         )}
 
-        <ApartmentDetailContent apartment={apartment} project={project} onClose={onClose} />
+        <ApartmentDetailContent apartment={apartment} project={project} variant="modal" onClose={onClose} />
       </div>
     </div>
   );

@@ -25,6 +25,7 @@ type StringField =
   | 'monthly_cost'
   | 'total_price'
   | 'description'
+  | 'short_description'
   | 'collective_debt'
   | 'property_type'
   | 'completion_year'
@@ -41,6 +42,8 @@ type FieldConfig = {
   inputType: 'text' | 'textarea' | 'datetime-local';
   // true = this key can appear in project.visible_fields (embed card field)
   isEmbedField: boolean;
+  // Shown as red text beneath the field when its value is empty.
+  emptyWarning?: string;
 };
 
 type Props = {
@@ -68,7 +71,8 @@ const FIELD_CONFIGS: FieldConfig[] = [
   { key: 'ownership_type', getLabel: p => resolveLabel(p.labels, 'field_ownership_type'), inputType: 'text',           isEmbedField: true  },
   { key: 'monthly_cost',   getLabel: p => resolveLabel(p.labels, 'field_monthly_cost'),   inputType: 'text',           isEmbedField: true  },
   { key: 'total_price',    getLabel: p => resolveLabel(p.labels, 'field_total_price'),    inputType: 'text',           isEmbedField: true  },
-  { key: 'description',    getLabel: p => resolveLabel(p.labels, 'field_description'),    inputType: 'textarea', isEmbedField: true  },
+  { key: 'short_description', getLabel: p => `${resolveLabel(p.labels, 'field_short_description')} ${EDITOR_INTERNAL_STRINGS.short_description_hint}`, inputType: 'textarea', isEmbedField: false, emptyWarning: EDITOR_INTERNAL_STRINGS.short_description_empty_warning },
+  { key: 'description',    getLabel: p => `${resolveLabel(p.labels, 'field_description')} ${EDITOR_INTERNAL_STRINGS.full_description_hint}`,    inputType: 'textarea', isEmbedField: true  },
   { key: 'collective_debt',  getLabel: p => resolveLabel(p.labels, 'field_collective_debt'),  inputType: 'text', isEmbedField: true  },
   { key: 'property_type',    getLabel: p => resolveLabel(p.labels, 'field_property_type'),    inputType: 'text', isEmbedField: true  },
   { key: 'completion_year',  getLabel: p => resolveLabel(p.labels, 'field_completion_year'),  inputType: 'text', isEmbedField: true  },
@@ -96,6 +100,7 @@ function initFormValues(apt: Apartment): FormValues {
     monthly_cost:   apt.monthly_cost ?? '',
     total_price:    apt.total_price ?? '',
     description:     apt.description ?? '',
+    short_description: apt.short_description ?? '',
     collective_debt: apt.collective_debt ?? '',
     property_type:   apt.property_type ?? '',
     completion_year: apt.completion_year ?? '',
@@ -668,6 +673,9 @@ export default function EditorSidebar({ project, apartments, apartment, onSaved,
                   onBlur={() => handleBlur(cfg.key)}
                   className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                 />
+              )}
+              {cfg.emptyWarning && !formValues[cfg.key] && (
+                <p className="text-[10px] text-red-500 mt-0.5">{cfg.emptyWarning}</p>
               )}
             </div>
           );

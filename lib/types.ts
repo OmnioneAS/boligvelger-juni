@@ -188,6 +188,10 @@ export type Apartment = {
   monthly_cost?: string;
   total_price?: string;
   description?: string;
+  // Plain text, soft guideline ~150 chars. Used in DetailModal, Card, and the
+  // Featured widget. `description` (above) is reserved for the standalone
+  // single-unit page only.
+  short_description?: string;
   collective_debt?: string;
   property_type?: string;
   completion_year?: string;

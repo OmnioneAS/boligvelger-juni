@@ -78,7 +78,7 @@ export default async function UnitPage({ params }: Params) {
           label={resolveLabel(project.labels, 'cta_back_to_overview')}
         />
       )}
-      <ApartmentDetailContent apartment={apartment} project={project} />
+      <ApartmentDetailContent apartment={apartment} project={project} variant="standalone" />
     </div>
   );
 }

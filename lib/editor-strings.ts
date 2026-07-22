@@ -36,6 +36,11 @@ export const EDITOR_INTERNAL_STRINGS = {
   // ── Embed visibility badge ────────────────────────────────────────────────
   hidden_in_embed: 'hidden in embed',
 
+  // ── Short vs. full description clarifying hints ──────────────────────────
+  short_description_hint: '(modal, cards)',
+  full_description_hint: '(single-page only)',
+  short_description_empty_warning: 'Not filled in — will show blank in modal and cards',
+
   // ── View image uploader ───────────────────────────────────────────────────
   upload_image: 'Upload image',
   replace_image: 'Replace image',
