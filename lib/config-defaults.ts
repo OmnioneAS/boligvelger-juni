@@ -50,6 +50,7 @@ export const DEFAULT_LABELS: Labels = {
   cta_close: 'Lukk',
   cta_view_details: 'Se detaljer',
   cta_back_to_overview: 'Se alle leiligheter',
+  cta_view_full_page: 'Se hele siden',
 
   no_apartments_match: 'Ingen leiligheter matcher filteret',
   switch_view_for_apartment: 'Bytt til {view} for å se denne leiligheten',
@@ -213,6 +214,7 @@ const ENGLISH_FALLBACKS: Record<string, string> = {
   cta_close: 'Close',
   cta_view_details: 'View details',
   cta_back_to_overview: 'Back to all apartments',
+  cta_view_full_page: 'View full page',
   no_apartments_match: 'No apartments match the filter',
   popup_viewing_title: 'Upcoming viewing',
   popup_viewing_cta: 'Register interest',
