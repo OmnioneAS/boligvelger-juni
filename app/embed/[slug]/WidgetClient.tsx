@@ -85,16 +85,9 @@ export default function WidgetClient({ project, apartments }: Props) {
       const status = project.statuses.find((s) => s.key === apt.status);
       if (status && !status.clickable) return;
       track('apartment_click', { unit_id: unitId });
-
-      const detailPageUrl = project.cta_config.detail_page_url;
-      if (detailPageUrl) {
-        window.top!.location.href = detailPageUrl.replace('{unitId}', unitId);
-        return;
-      }
-
       setSelectedUnitId(unitId);
     },
-    [apartments, project.statuses, project.cta_config.detail_page_url],
+    [apartments, project.statuses],
   );
 
   const handleFilterChange = useCallback(

@@ -55,6 +55,7 @@ export default function Card({
     : false;
 
   const active = isHovered || isSelected;
+  const detailPageUrl = project.cta_config.detail_page_url;
 
   return (
     <div
@@ -111,6 +112,18 @@ export default function Card({
           );
         })}
       </div>
+
+      {detailPageUrl && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            window.top!.location.href = detailPageUrl.replace('{unitId}', apartment.unit_id);
+          }}
+          className="mt-1 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+        >
+          {resolveLabel(project.labels, 'cta_view_full_page')} →
+        </button>
+      )}
     </div>
   );
 }

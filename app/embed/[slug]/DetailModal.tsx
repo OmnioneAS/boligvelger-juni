@@ -11,6 +11,8 @@ type Props = {
 };
 
 export default function DetailModal({ apartment, project, onClose }: Props) {
+  const detailPageUrl = project.cta_config.detail_page_url;
+
   return (
     /* Backdrop */
     <div
@@ -27,6 +29,17 @@ export default function DetailModal({ apartment, project, onClose }: Props) {
         >
           ✕
         </button>
+
+        {detailPageUrl && (
+          <div className="px-5 pt-4">
+            <button
+              onClick={() => { window.top!.location.href = detailPageUrl.replace('{unitId}', apartment.unit_id); }}
+              className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              {resolveLabel(project.labels, 'cta_view_full_page')} →
+            </button>
+          </div>
+        )}
 
         <ApartmentDetailContent apartment={apartment} project={project} onClose={onClose} />
       </div>
