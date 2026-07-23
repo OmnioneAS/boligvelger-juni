@@ -1,6 +1,7 @@
 import type {
   AnalyticsConfig,
   CtaConfig,
+  FeaturedConfig,
   GalleryConfig,
   Labels,
   PopupConfig,
@@ -156,6 +157,17 @@ export const DEFAULT_PROJECT_CONFIG: ProjectConfig = {
   hidden_apartment_behavior: 'hide',
 };
 
+// ── Featured units (4 slots, weekly rotation) ────────────────────────────────
+
+export const DEFAULT_FEATURED_CONFIG: FeaturedConfig = {
+  slot_count: 4,
+  rotation_days: 7,
+  selected_unit_ids: [],
+  title: 'Utvalgte',
+  heading: 'Utvalgte leiligheter',
+  description: '',
+};
+
 // ── Analytics (empty — customer configures their own IDs) ────────────────────
 
 export const DEFAULT_ANALYTICS_CONFIG: AnalyticsConfig = {
@@ -181,6 +193,7 @@ export function buildDefaultProject(
     popup_config: DEFAULT_POPUP_CONFIG,
     gallery_config: DEFAULT_GALLERY_CONFIG,
     analytics_config: DEFAULT_ANALYTICS_CONFIG,
+    featured_config: DEFAULT_FEATURED_CONFIG,
   };
 }
 

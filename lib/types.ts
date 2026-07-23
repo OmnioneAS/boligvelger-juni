@@ -119,6 +119,20 @@ export type GalleryConfig = {
   default_image_type: ImageType;
 };
 
+// ── Featured units config ────────────────────────────────────────────────────
+// Every field optional: existing projects get '{}' from the DB default until
+// configured in Settings, so the app must fall back to sensible defaults
+// wherever these are read (same pattern as resolveLabel()'s fallbacks).
+export type FeaturedConfig = {
+  slot_count?: number;
+  rotation_days?: number;
+  last_rotated_at?: string; // ISO timestamp
+  selected_unit_ids?: string[];
+  title?: string;
+  heading?: string;
+  description?: string;
+};
+
 // ── Analytics config ─────────────────────────────────────────────────────────
 
 export type AnalyticsConfig = {
@@ -166,6 +180,7 @@ export type Project = {
   popup_config: PopupConfig;
   gallery_config: GalleryConfig;
   analytics_config: AnalyticsConfig;
+  featured_config: FeaturedConfig;
   created_at: string;
   updated_at: string;
 };
@@ -200,6 +215,7 @@ export type Apartment = {
   viewing_date?: string;
   viewing_note?: string;
   cta_override?: CtaConfig;
+  featured_pinned: boolean;
   polygons: Polygons;
   images: ApartmentImage[];
   display_order: number;
