@@ -64,3 +64,37 @@ body {
   .bv-col-canvas { width: 100%; }
   .bv-col-cards  { width: 100%; }
 }
+
+/* ── Featured Units widget ────────────────────────────────────────────────── */
+/* Same container-query approach as .bv-root — no viewport media queries. */
+
+.bv-featured-root {
+  container-type: inline-size;
+  container-name: bv-featured-root;
+}
+
+.bv-featured-layout {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile (< 768px container): stacked, carousel first */
+.bv-featured-col-carousel { width: 100%; }
+.bv-featured-col-content  { width: 100%; }
+
+/* Desktop: carousel left, content right */
+@container bv-featured-root (min-width: 768px) {
+  .bv-featured-layout {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  .bv-featured-col-carousel {
+    flex: 1 1 0%;
+    min-width: 0;
+  }
+  .bv-featured-col-content {
+    flex: 1 1 0%;
+    min-width: 0;
+    padding-left: 1.5rem;
+  }
+}
