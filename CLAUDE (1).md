@@ -445,12 +445,24 @@ Built in five small merged branches, in order, each independently verified again
 - Every new field (`featured_pinned`, `featured_config` and all its sub-fields) defaults to unset/false and was verified against live data to not change existing projects' behavior
 - Two real bugs were caught and fixed *during* this session's own manual verification, not after the fact — see steps 3 and 4 above
 
+### Session 10 (2026-07-23) — image optimization, DB index, performance/analytics checklists
+
+- **`feature/next-image-optimization`** — every remaining `<img>` in the app converted to `next/image` (`ViewSwitcher.tsx`, `ImageCanvas.tsx`, `ImageGallery.tsx`, `FeaturedCarousel.tsx`, `EditorSidebar.tsx`'s apartment thumbnails). `next.config.ts` already allowlisted Supabase Storage/Picsum/Unsplash from the initial scaffold, no new config needed. The polygon-critical `ImageCanvas.tsx` uses explicit `width`/`height` from `activeView.image_width`/`image_height` (already-known data) + `style={{width:'100%', height:'auto'}}` rather than `fill`, specifically to preserve the exact box-model the polygon SVG overlay's `viewBox` scaling depends on — verified in the rendered HTML that the `<img>` width/height matches the SVG `viewBox` exactly. One intentional visual change: `ImageGallery`'s main image is now a fixed `h-72` with `object-contain` letterboxing (was auto-height up to `max-h-72`), since `ApartmentImage` doesn't store intrinsic dimensions and `fill` requires a sized container — user visually confirmed this looks fine on both desktop and mobile before merging.
+- **`feature/project-id-index`** — `apartments_project_id_idx` on `apartments(project_id)`. Postgres doesn't auto-index foreign key columns, only primary/unique keys, and every embed/editor query filters by `project_id` — keeps those lookups fast as a project's apartment count grows. User confirmed via `select indexname from pg_indexes where tablename = 'apartments'`.
+- **`docs/go-live-checklist`** (from session 8, merged) is where the WP staging→production domain swap items live.
+- **`docs/session-9-notes`, this session's own performance/analytics doc branches** — added the "Performance — pre-launch checklist" and "Analytics — before real tracking IDs go live" sections (see above in this file). The analytics section is based on actually reading the code, not assumption: `analytics_config` isn't just missing from the Settings UI, nothing in the app currently loads `gtag.js`/`fbevents.js` at all — `track()` only calls `window.gtag`/`window.fbq` if already present on `window`, which they never are inside the embed's iframe today.
+
+#### Hard constraints — session 10 audit
+
+- No `any` — `npx tsc --noEmit` and `npm run build` both pass clean
+- Verified against live data: all three embed routes (main widget, unit page, featured widget) and the editor confirmed still rendering correctly after the `next/image` conversion, on both local dev and the deployed production URL
+
 ### What's next
 
-**Remaining polish (can do any time):**
-- Image optimization — switch `<img>` to Next.js `<Image>` with Supabase image transforms for thumbnails
-- Dedicated `/api/public/[slug]/[unitId]` endpoint (nice-to-have; the WordPress PHP side already works by filtering the existing `/api/public/[slug]` response instead)
+**Dedicated endpoint (nice-to-have, not required):** `/api/public/[slug]/[unitId]` — the WordPress PHP side already works today by filtering the existing `/api/public/[slug]` response instead, so this is only worth doing if that response ever gets large enough to matter.
 
 **Stale doc, not yet corrected:** `SPEC.md` line 650 still describes `/embed/[slug]/[unitId]` as "loads widget with modal pre-opened" — that's not what was built (see Session 7 decisions). Worth fixing if anyone treats `SPEC.md` as ground truth.
+
+**See also, still open:** the "Go-live checklist," "Performance — pre-launch checklist," and "Analytics — before real tracking IDs go live" sections near the top of this file — none of those items are done yet, they're deliberately deferred until closer to real launch.
 
 <!-- Update this section after each work session so future Claude sessions know exactly where things stand. -->
