@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Image from 'next/image';
 import type { Project, Apartment, ApartmentImage, VisibleField } from '@/lib/types';
 import { resolveLabel, DEFAULT_FEATURED_CONFIG } from '@/lib/config-defaults';
 import { EDITOR_INTERNAL_STRINGS } from '@/lib/editor-strings';
@@ -254,12 +255,9 @@ function ApartmentImages({
             className="flex flex-col gap-1 border border-zinc-100 rounded p-2 bg-zinc-50"
           >
             {/* Thumbnail */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={img.url}
-              alt={img.alt}
-              className="w-full h-20 object-cover rounded border border-zinc-200"
-            />
+            <div className="relative w-full h-20 rounded overflow-hidden border border-zinc-200">
+              <Image src={img.url} alt={img.alt} fill sizes="256px" className="object-cover" />
+            </div>
             <div className="flex items-center gap-1.5">
               <label className="text-[10px] text-zinc-400 shrink-0">
                 {EDITOR_INTERNAL_STRINGS.apt_image_type_label}

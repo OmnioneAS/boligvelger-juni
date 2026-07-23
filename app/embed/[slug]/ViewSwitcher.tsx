@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import type { Project } from '@/lib/types';
 import type { UseActiveViewReturn } from '@/lib/useActiveView';
 import { resolveLabel } from '@/lib/config-defaults';
@@ -32,12 +33,9 @@ export default function ViewSwitcher({ project, activeViewHook }: Props) {
               ].join(' ')}
             >
               {view.thumbnail_url && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={view.thumbnail_url}
-                  alt=""
-                  className="w-6 h-4 object-cover rounded-sm"
-                />
+                <span className="relative w-6 h-4 rounded-sm overflow-hidden flex-shrink-0">
+                  <Image src={view.thumbnail_url} alt="" fill sizes="24px" className="object-cover" />
+                </span>
               )}
               {resolveLabel(project.labels, view.label_key)}
             </button>
