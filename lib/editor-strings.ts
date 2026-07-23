@@ -19,6 +19,10 @@ export const EDITOR_INTERNAL_STRINGS = {
   saving: 'Saving…',
   save_error: 'Save failed',
 
+  // ── Featured units pin ────────────────────────────────────────────────────
+  field_featured_pinned: 'Featured (pinned)',
+  featured_pinned_max_reached: 'Maximum {slotCount} pinned apartments reached',
+
   // ── Sidebar sections ──────────────────────────────────────────────────────
   section_status: 'Status',
   section_fields: 'Fields',

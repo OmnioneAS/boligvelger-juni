@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Project, Apartment, ApartmentImage, VisibleField } from '@/lib/types';
-import { resolveLabel } from '@/lib/config-defaults';
+import { resolveLabel, DEFAULT_FEATURED_CONFIG } from '@/lib/config-defaults';
 import { EDITOR_INTERNAL_STRINGS } from '@/lib/editor-strings';
 import { saveApartmentFields, createApartment, deleteApartment } from '@/lib/actions';
 
@@ -416,6 +416,22 @@ export default function EditorSidebar({ project, apartments, apartment, onSaved,
     [apartment, onSaved, setSaveStatusWithTimeout],
   );
 
+  // Auto-save featured_pinned on change. Optimistic update first.
+  const handleTogglePinned = useCallback(
+    async (value: boolean) => {
+      if (!apartment) return;
+      setSaveStatus('saving');
+      const result = await saveApartmentFields(apartment.id, { featured_pinned: value });
+      if (result.ok) {
+        onSaved(result.apartment);
+        setSaveStatusWithTimeout('saved');
+      } else {
+        setSaveStatusWithTimeout('error');
+      }
+    },
+    [apartment, onSaved, setSaveStatusWithTimeout],
+  );
+
   // ── Empty state: show apartment list so user can select one to start ────────
 
   if (!apartment) {
@@ -532,6 +548,10 @@ export default function EditorSidebar({ project, apartments, apartment, onSaved,
   const visibleFieldSet = new Set<string>(project.visible_fields as string[]);
   const selectedStatus = project.statuses.find(s => s.key === apartment.status);
 
+  const featuredSlotCount = project.featured_config.slot_count ?? DEFAULT_FEATURED_CONFIG.slot_count!;
+  const pinnedCount = apartments.filter(a => a.featured_pinned && a.id !== apartment.id).length;
+  const pinLimitReached = !apartment.featured_pinned && pinnedCount >= featuredSlotCount;
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -631,6 +651,23 @@ export default function EditorSidebar({ project, apartments, apartment, onSaved,
             </select>
           </div>
         </div>
+
+        {/* Featured pin */}
+        <label
+          className={`flex items-center gap-2 ${pinLimitReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+          title={pinLimitReached ? EDITOR_INTERNAL_STRINGS.featured_pinned_max_reached.replace('{slotCount}', String(featuredSlotCount)) : undefined}
+        >
+          <input
+            type="checkbox"
+            checked={apartment.featured_pinned}
+            disabled={pinLimitReached}
+            onChange={e => handleTogglePinned(e.target.checked)}
+            className="rounded"
+          />
+          <span className={`text-xs ${pinLimitReached ? 'text-zinc-300' : 'text-zinc-500'}`}>
+            {EDITOR_INTERNAL_STRINGS.field_featured_pinned}
+          </span>
+        </label>
       </div>
 
       {/* ── Field rows ── */}
