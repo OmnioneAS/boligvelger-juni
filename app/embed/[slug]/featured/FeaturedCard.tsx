@@ -6,6 +6,7 @@ import { resolveLabel } from '@/lib/config-defaults';
 type Props = {
   apartment: Apartment;
   project: Project;
+  onSelect: (unitId: string) => void;
 };
 
 const TRUNCATE_LENGTH = 60;
@@ -14,11 +15,14 @@ function truncate(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, max).trimEnd()}...` : text;
 }
 
-export default function FeaturedCard({ apartment, project }: Props) {
+export default function FeaturedCard({ apartment, project, onSelect }: Props) {
   const detailPageUrl = project.cta_config.detail_page_url;
 
   return (
-    <div className="flex flex-col gap-1.5 p-3 rounded-lg border border-zinc-100 bg-white">
+    <div
+      onClick={() => onSelect(apartment.unit_id)}
+      className="flex flex-col gap-1.5 p-3 rounded-lg border border-zinc-100 bg-white cursor-pointer hover:bg-zinc-50 transition-colors"
+    >
       <span className="text-sm font-semibold text-zinc-900 leading-tight">
         {apartment.title || apartment.unit_id}
       </span>
@@ -35,7 +39,8 @@ export default function FeaturedCard({ apartment, project }: Props) {
       )}
       {detailPageUrl && (
         <button
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             window.top!.location.href = detailPageUrl.replace('{unitId}', apartment.unit_id);
           }}
           className="mt-1 self-start text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"

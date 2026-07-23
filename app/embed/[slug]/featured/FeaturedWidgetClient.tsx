@@ -1,8 +1,10 @@
 'use client';
 
-import type { CSSProperties } from 'react';
+import { useCallback, useState, type CSSProperties } from 'react';
 import type { Apartment, Project } from '@/lib/types';
 import { resolveLabel, DEFAULT_FEATURED_CONFIG } from '@/lib/config-defaults';
+import { track } from '@/lib/analytics';
+import DetailModal from '../DetailModal';
 import FeaturedCarousel from './FeaturedCarousel';
 import FeaturedCard from './FeaturedCard';
 
@@ -30,6 +32,26 @@ export default function FeaturedWidgetClient({
   const heading = project.featured_config.heading ?? DEFAULT_FEATURED_CONFIG.heading;
   const description = project.featured_config.description ?? DEFAULT_FEATURED_CONFIG.description;
   const overviewUrl = project.cta_config.overview_url;
+
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+  const selectedApartment = featuredApartments.find((a) => a.unit_id === selectedUnitId) ?? null;
+
+  // Same click-gating as the main widget's Card/WidgetClient: a status
+  // marked non-clickable (e.g. sold) never opens the modal. In practice
+  // every featured apartment is already status=available (the selection
+  // logic only ever picks from available units), so this is defensive
+  // consistency rather than something expected to trigger here.
+  const handleSelect = useCallback(
+    (unitId: string) => {
+      const apt = featuredApartments.find((a) => a.unit_id === unitId);
+      if (!apt) return;
+      const status = project.statuses.find((s) => s.key === apt.status);
+      if (status && !status.clickable) return;
+      track('apartment_click', { unit_id: unitId });
+      setSelectedUnitId(unitId);
+    },
+    [featuredApartments, project.statuses],
+  );
 
   const rootStyle = {
     '--bv-primary': primaryColor || DEFAULT_PRIMARY,
@@ -62,7 +84,7 @@ export default function FeaturedWidgetClient({
           {featuredApartments.length > 0 && (
             <div className="grid grid-cols-2 gap-3 mt-1">
               {featuredApartments.map((apt) => (
-                <FeaturedCard key={apt.id} apartment={apt} project={project} />
+                <FeaturedCard key={apt.id} apartment={apt} project={project} onSelect={handleSelect} />
               ))}
             </div>
           )}
@@ -78,6 +100,14 @@ export default function FeaturedWidgetClient({
           )}
         </div>
       </div>
+
+      {selectedApartment && (
+        <DetailModal
+          apartment={selectedApartment}
+          project={project}
+          onClose={() => setSelectedUnitId(null)}
+        />
+      )}
     </div>
   );
 }

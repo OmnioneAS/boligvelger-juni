@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import type { Project, VisibleField, CtaType } from '@/lib/types';
 import { saveProjectConfig } from '@/lib/actions';
+import { DEFAULT_FEATURED_CONFIG } from '@/lib/config-defaults';
 
 type Props = {
   project: Project;
@@ -39,6 +40,22 @@ export default function EditorSettings({ project, onSaved, onClose }: Props) {
   const [popupDelaySec, setPopupDelaySec]   = useState(Math.round(project.popup_config.delay_ms / 1000));
   const [popupCtaUrl, setPopupCtaUrl]       = useState(project.popup_config.when_no_viewing.cta_url ?? '');
 
+  const [featuredSlotCount, setFeaturedSlotCount] = useState(
+    project.featured_config.slot_count ?? DEFAULT_FEATURED_CONFIG.slot_count!,
+  );
+  const [featuredRotationDays, setFeaturedRotationDays] = useState(
+    project.featured_config.rotation_days ?? DEFAULT_FEATURED_CONFIG.rotation_days!,
+  );
+  const [featuredTitle, setFeaturedTitle] = useState(
+    project.featured_config.title ?? DEFAULT_FEATURED_CONFIG.title!,
+  );
+  const [featuredHeading, setFeaturedHeading] = useState(
+    project.featured_config.heading ?? DEFAULT_FEATURED_CONFIG.heading!,
+  );
+  const [featuredDescription, setFeaturedDescription] = useState(
+    project.featured_config.description ?? DEFAULT_FEATURED_CONFIG.description!,
+  );
+
   const [saving, setSaving]       = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
 
@@ -65,6 +82,18 @@ export default function EditorSettings({ project, onSaved, onClose }: Props) {
       labels,
       cta_config: ctaConfig,
       popup_config: newPopupConfig,
+      // Spread the existing featured_config first — selected_unit_ids and
+      // last_rotated_at are managed by the widget's own reconciliation
+      // logic, never edited here, and a jsonb column update replaces the
+      // whole object rather than merging.
+      featured_config: {
+        ...project.featured_config,
+        slot_count: featuredSlotCount,
+        rotation_days: featuredRotationDays,
+        title: featuredTitle,
+        heading: featuredHeading,
+        description: featuredDescription,
+      },
     });
     setSaving(false);
     if (result.ok) {
@@ -75,7 +104,11 @@ export default function EditorSettings({ project, onSaved, onClose }: Props) {
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 3000);
     }
-  }, [visibleFields, labels, ctaConfig, popupEnabled, popupDelaySec, popupCtaUrl, project, onSaved]);
+  }, [
+    visibleFields, labels, ctaConfig, popupEnabled, popupDelaySec, popupCtaUrl,
+    featuredSlotCount, featuredRotationDays, featuredTitle, featuredHeading, featuredDescription,
+    project, onSaved,
+  ]);
 
   return (
     <div className="bg-white border border-zinc-200 rounded-lg divide-y divide-zinc-100">
@@ -215,6 +248,65 @@ export default function EditorSettings({ project, onSaved, onClose }: Props) {
             className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
           />
         </div>
+      </div>
+
+      {/* ── Featured units widget ── */}
+      <div className="px-5 py-4 flex flex-col gap-3">
+        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+          Featured units widget
+        </h3>
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <label className="text-xs text-zinc-400 block mb-0.5">Slots</label>
+            <input
+              type="number"
+              min={1}
+              value={featuredSlotCount}
+              onChange={e => setFeaturedSlotCount(Math.max(1, Number(e.target.value)))}
+              className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="text-xs text-zinc-400 block mb-0.5">Rotation (days)</label>
+            <input
+              type="number"
+              min={1}
+              value={featuredRotationDays}
+              onChange={e => setFeaturedRotationDays(Math.max(1, Number(e.target.value)))}
+              className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-zinc-400 block mb-0.5">Title (small label)</label>
+          <input
+            type="text"
+            value={featuredTitle}
+            onChange={e => setFeaturedTitle(e.target.value)}
+            className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-zinc-400 block mb-0.5">Heading</label>
+          <input
+            type="text"
+            value={featuredHeading}
+            onChange={e => setFeaturedHeading(e.target.value)}
+            className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-zinc-400 block mb-0.5">Description</label>
+          <textarea
+            value={featuredDescription}
+            onChange={e => setFeaturedDescription(e.target.value)}
+            rows={2}
+            className="w-full text-sm border border-zinc-200 rounded px-2 py-1.5 resize-y focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+          />
+        </div>
+        <p className="text-[10px] text-zinc-400">
+          Pick which apartments are featured from each apartment&apos;s panel in the sidebar.
+        </p>
       </div>
 
       {/* ── Popup ── */}

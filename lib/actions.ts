@@ -58,7 +58,7 @@ export async function createApartment(
 
 export async function saveProjectConfig(
   id: string,
-  patch: Partial<Pick<Project, 'visible_fields' | 'labels' | 'cta_config' | 'popup_config' | 'statuses'>>,
+  patch: Partial<Pick<Project, 'visible_fields' | 'labels' | 'cta_config' | 'popup_config' | 'statuses' | 'featured_config'>>,
 ): Promise<{ ok: true; project: Project } | { ok: false; error: string }> {
   const { data, error } = await db
     .from('projects')
