@@ -99,6 +99,28 @@ canonical/OG URLs there too. Also update `BV_APP_URL` in the mu-plugin and
 the `src` in any raw `embed.js` script tags pasted into Bricks Code
 elements, since those point at the app's domain, not WordPress's.
 
+## Performance — pre-launch checklist
+
+Images were converted to `next/image` (Session 10) and `apartments.project_id`
+got an index (same session) — both done. These three were identified in the
+same pass but deliberately deferred rather than done speculatively:
+
+- **Konva "Several Konva instances detected" warning** — logged by react-konva
+  itself in the dev server output on the editor page. Usually means extra
+  bundle weight/memory from how it's being loaded/imported. Editor-only, never
+  shown to a customer in the embed — low priority, revisit if the editor ever
+  feels sluggish, not before.
+- **`DetailModal` isn't lazy-loaded** — it's bundled with the main widget even
+  though it's only needed after a card/polygon click. Next's automatic
+  per-route code-splitting already handles the bigger wins; this would be a
+  smaller, targeted `next/dynamic` import. Worth doing, but low urgency —
+  the modal itself is not a large component.
+- **No general performance audit yet** — no Lighthouse pass, no bundle
+  analysis, no real load-time profiling has been done anywhere in this
+  project. Worth doing once, closer to actual launch with a real customer's
+  real images/data — profiling against the seed placeholder data wouldn't be
+  representative of real usage anyway.
+
 ## Commands
 
 - `npm run dev` — local dev on http://localhost:3000
