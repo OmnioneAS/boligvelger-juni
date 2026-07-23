@@ -121,6 +121,43 @@ same pass but deliberately deferred rather than done speculatively:
   real images/data — profiling against the seed placeholder data wouldn't be
   representative of real usage anyway.
 
+## Analytics — before real tracking IDs go live
+
+`analytics_config` (`ga4_measurement_id`, `meta_pixel_id`) exists as a type
+and a default value, but three things need to happen before it's actually
+usable — checked the code directly, not just the Settings UI:
+
+- **Not exposed in Settings UI** — confirmed via grep, zero references to
+  `analytics_config`/`ga4_measurement_id`/`meta_pixel_id` anywhere outside
+  `lib/types.ts` and `lib/config-defaults.ts`. Setting these today requires
+  a raw DB edit.
+- **More importantly: nothing loads the tracking scripts at all.**
+  `lib/analytics.ts`'s `track()` only calls `window.gtag`/`window.fbq` *if
+  they already exist* on `window` — nothing in the app ever injects the
+  actual `gtag.js`/`fbevents.js` script tags using
+  `ga4_measurement_id`/`meta_pixel_id`. So filling in those DB fields today
+  would have **zero effect** — the script-loading mechanism doesn't exist
+  yet, this isn't just a missing Settings field.
+- **Attribution needs deciding before writing that script-loading code**,
+  since the two options are architecturally different:
+  - *App's own GA4/Meta Pixel property* — not implemented at all today;
+    would mean loading `gtag.js`/`fbevents.js` inside the embed's own
+    iframe document, keyed off `analytics_config`.
+  - *WordPress site's own GA4/Meta Pixel* — partially works today: `track()`
+    already does `window.parent.postMessage({type:'bv:analytics', ...})`,
+    and `embed.js` already forwards that to `window.gtag`/`window.fbq` *if
+    those exist on the parent page*. No new code needed on the app side for
+    this path — only requires the WordPress site to have its own GA4/Meta
+    Pixel already installed.
+  - *Both* is also possible but means building the first path in addition
+    to what already exists for the second.
+- **No cookie consent gate before analytics fire** — `WidgetClient` already
+  dispatches `track('widget_load', ...)` unconditionally on mount, no
+  consent check. Harmless today since nothing is actually wired to real
+  tracking IDs yet (see above), but becomes a real GDPR (Norway) compliance
+  problem the moment real IDs are added to either attribution path above —
+  needs a consent mechanism built *before* that, not after.
+
 ## Commands
 
 - `npm run dev` — local dev on http://localhost:3000
