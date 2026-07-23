@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 type CarouselImage = { url: string; alt: string };
 
@@ -29,13 +30,15 @@ export default function FeaturedCarousel({ images, intervalMs = 4500 }: Props) {
   return (
     <div className="relative w-full h-full min-h-60 overflow-hidden bg-zinc-100 rounded-lg">
       {images.map((img, i) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           key={i}
           src={img.url}
           alt={img.alt}
+          fill
+          sizes="(min-width: 768px) 50vw, 100vw"
+          priority={i === 0}
           className={[
-            'absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out',
+            'object-cover transition-opacity duration-1000 ease-in-out',
             i === activeIdx ? 'opacity-100' : 'opacity-0',
           ].join(' ')}
         />

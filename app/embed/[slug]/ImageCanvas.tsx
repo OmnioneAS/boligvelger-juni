@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import type { Apartment, Project } from '@/lib/types';
 import type { UseActiveViewReturn } from '@/lib/useActiveView';
 import PolygonOverlay from './PolygonOverlay';
@@ -36,11 +37,14 @@ export default function ImageCanvas({
 
   return (
     <div style={{ position: 'relative', lineHeight: 0 }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={activeView.image_url}
         alt=""
-        style={{ width: '100%', display: 'block' }}
+        width={activeView.image_width}
+        height={activeView.image_height}
+        sizes="(min-width: 768px) 60vw, 100vw"
+        priority
+        style={{ width: '100%', height: 'auto', display: 'block' }}
       />
       <svg
         style={{

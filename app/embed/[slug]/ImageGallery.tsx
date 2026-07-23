@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import type { ApartmentImage } from '@/lib/types';
 
 type Props = {
@@ -32,12 +33,13 @@ export default function ImageGallery({ images }: Props) {
   return (
     <div className="flex flex-col gap-2">
       {/* Main image */}
-      <div className="relative w-full bg-zinc-100 rounded-lg overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+      <div className="relative w-full h-72 bg-zinc-100 rounded-lg overflow-hidden">
+        <Image
           src={active.url}
           alt={active.alt}
-          className="w-full object-contain max-h-72"
+          fill
+          sizes="(min-width: 640px) 32rem, 100vw"
+          className="object-contain"
         />
         {active.caption && (
           <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-xs px-3 py-1.5">
@@ -54,12 +56,11 @@ export default function ImageGallery({ images }: Props) {
               key={i}
               onClick={() => setActiveIdx(i)}
               className={[
-                'shrink-0 w-14 h-10 rounded overflow-hidden border-2 transition-colors',
+                'relative shrink-0 w-14 h-10 rounded overflow-hidden border-2 transition-colors',
                 i === activeIdx ? 'border-blue-500' : 'border-transparent hover:border-zinc-300',
               ].join(' ')}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img.url} alt={img.alt} className="w-full h-full object-cover" />
+              <Image src={img.url} alt={img.alt} fill sizes="56px" className="object-cover" />
             </button>
           ))}
         </div>
