@@ -18,9 +18,23 @@
  *           data-target="bv-embed-SLUG-UNIT"
  *           async></script>
  *
+ * To embed the Featured Units widget instead, add data-featured="true":
+ *
+ *   <div id="bv-embed-SLUG-FEATURED"></div>
+ *   <script src="https://yourapp.vercel.app/embed.js"
+ *           data-project="SLUG"
+ *           data-featured="true"
+ *           data-target="bv-embed-SLUG-FEATURED"
+ *           async></script>
+ *
  * Optional data attributes:
  *   data-height   Initial iframe height in px (default: 600)
  *   data-radius   Border radius for the iframe (e.g. "12px")
+ *   data-primary  Accent color for buttons, e.g. "#2563eb" (Featured widget only)
+ *   data-font     Font-family to use inside the widget, e.g. "Georgia, serif"
+ *                 (Featured widget only — the widget lives in a cross-origin
+ *                 iframe, so it can't inherit the parent page's font via CSS;
+ *                 this passes it through explicitly instead.)
  */
 (function () {
   var script = document.currentScript;
@@ -28,9 +42,12 @@
 
   var slug = script.getAttribute('data-project');
   var unitId = script.getAttribute('data-unit');
+  var featured = script.getAttribute('data-featured') === 'true';
   var targetId = script.getAttribute('data-target');
   var initialHeight = parseInt(script.getAttribute('data-height') || '600', 10);
   var radius = script.getAttribute('data-radius') || '0px';
+  var primary = script.getAttribute('data-primary');
+  var font = script.getAttribute('data-font');
 
   if (!slug || !targetId) {
     console.warn('[boligvelger] Missing data-project or data-target attribute.');
@@ -47,8 +64,13 @@
   var scriptSrc = script.getAttribute('src') || '';
   var appUrl = scriptSrc.replace(/\/embed\.js.*$/, '') || 'https://localhost:3000';
 
+  var path = featured ? '/featured' : (unitId ? '/' + encodeURIComponent(unitId) : '');
+  var query = [];
+  if (primary) query.push('primary=' + encodeURIComponent(primary));
+  if (font) query.push('font=' + encodeURIComponent(font));
+
   var iframe = document.createElement('iframe');
-  iframe.src = appUrl + '/embed/' + slug + (unitId ? '/' + unitId : '');
+  iframe.src = appUrl + '/embed/' + slug + path + (query.length ? '?' + query.join('&') : '');
   iframe.style.cssText = [
     'width:100%',
     'height:' + initialHeight + 'px',
